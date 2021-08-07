@@ -1,6 +1,5 @@
-
 import 'package:crm_flutter/ui/DeliveryData.dart';
-import 'package:crm_flutter/ui/SplashScreen.dart';
+import 'package:crm_flutter/ui/PaymentDetails.dart';
 import 'package:flutter/material.dart';
 
 void main() {

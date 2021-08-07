@@ -1,3 +1,4 @@
+import 'package:checkbox_grouped/checkbox_grouped.dart';
 import 'package:flutter/material.dart';
 
 class PaymentDetails extends StatefulWidget{
@@ -10,7 +11,7 @@ class PaymentDetails extends StatefulWidget{
 }
 
 class PaymentDetailsState extends State<PaymentDetails>{
-
+ // SimpleGroupedCheckbox groupconroller = new SimpleGroupedCheckbox(controller)
   final _formKey = GlobalKey<FormState>();
   TextEditingController username = TextEditingController();
   TextEditingController refernce_Id = TextEditingController();
@@ -18,17 +19,18 @@ class PaymentDetailsState extends State<PaymentDetails>{
 
   @override
   Widget build(BuildContext context) {
+    var controller;
     return Scaffold(
         appBar: AppBar(
             backgroundColor: Colors.lightBlue.shade900,
-            title: Text('Jivo')
+            title: Text('Payment Details')
         ),
         body:Form(
             key: _formKey,
             child: Column(
               children: [
                 Container(
-                    margin: EdgeInsets.only(left: 10, top: 25),
+                    margin: EdgeInsets.only(left: 10, top: 25,right:10),
                     child: Column(
                       children: [
                         TextFormField(
@@ -55,7 +57,7 @@ class PaymentDetailsState extends State<PaymentDetails>{
                     )
                 ),
                 Container(
-                    margin: EdgeInsets.only(left: 10, top: 25),
+                    margin: EdgeInsets.only(left: 10, top: 25,right:10),
                     child: Column(
                       children: [
                         TextFormField(
@@ -82,7 +84,7 @@ class PaymentDetailsState extends State<PaymentDetails>{
                       ],
                     )),
                 Container(
-                    margin: EdgeInsets.only(left: 10, top: 25),
+                    margin: EdgeInsets.only(left: 10, top: 25,right:10),
                     child: Column(
                       children: [
                         TextFormField(
@@ -101,7 +103,7 @@ class PaymentDetailsState extends State<PaymentDetails>{
                                     color: Colors.grey, width: 2.0),
                                 borderRadius: BorderRadius.circular(15.0),
                               ),
-                              prefixIcon: Icon(Icons.lock),
+                              prefixIcon: Icon(Icons.money),
 
                               border: OutlineInputBorder(),
                               hintText: 'Amount'),
@@ -109,6 +111,22 @@ class PaymentDetailsState extends State<PaymentDetails>{
                       ],
                     )
                 ),
+                // Container(
+                //   width: MediaQuery.of(context).size.width * 0.5,
+                //     height: double.infinity,
+                //     child:  SimpleGroupedCheckbox<int>(
+                //     controller: controller,
+                //     itemsTitle: ["COD" ,"Paytm"],
+                //     values: [1,2],
+                //     groupStyle: GroupStyle(
+                //         activeColor: Colors.red,
+                //         itemTitleStyle: TextStyle(
+                //             fontSize: 13
+                //         )
+                //       ),
+                //     checkFirstElement: false,
+                //     ),
+                //   ),
                 new GestureDetector(
                     onTap: () {
                       if (_formKey.currentState!.validate()) {

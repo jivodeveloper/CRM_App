@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'dart:async';
 import 'package:crm_flutter/ui/Dashboard.dart';
 import 'package:crm_flutter/Model/User.dart';
+import 'package:expandable/expandable.dart';
 import 'package:flutter/material.dart';
 import 'package:ars_progress_dialog/ars_progress_dialog.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -26,6 +27,7 @@ class LoginScreenState extends State<LoginScreen> {
   TextEditingController username = TextEditingController();
   TextEditingController password = TextEditingController();
   late ArsProgressDialog progressDialog;
+  late ExpandableController categoryController;
 
   Future<bool> _onBackPressed() async{
     return await showDialog<bool>(
@@ -113,6 +115,8 @@ class LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
+
+    categoryController = ExpandableController(initialExpanded: false);
     progressDialog = ArsProgressDialog(
     context,
     blur: 2,
@@ -320,6 +324,7 @@ class LoginScreenState extends State<LoginScreen> {
 
       //  return "Logged In Successfully";
     } else{
+
       progressDialog.dismiss();
       Fluttertoast.showToast(
             msg: "Please check your credentials",
