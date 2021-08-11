@@ -1,20 +1,33 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:ars_progress_dialog/ars_progress_dialog.dart';
+import 'package:connectivity/connectivity.dart';
 import 'package:crm_flutter/Helper/DatabaseHelper.dart';
+import 'package:crm_flutter/Model/PaymentJSON.dart';
+import 'package:flutter/scheduler.dart' show timeDilation;
+
 import 'package:crm_flutter/Helper/PaymentDatabaseHelper.dart';
 import 'package:crm_flutter/Model/Items.dart';
 import 'package:crm_flutter/Model/OrderList.dart';
 import 'package:crm_flutter/Model/Order_List.dart';
 import 'package:crm_flutter/Model/Payment.dart';
 import 'package:crm_flutter/Model/Paymentdetails.dart';
-import 'package:connectivity/connectivity.dart';
-import 'package:crm_flutter/ui/PaymentDetails.dart';
 import 'package:expandable/expandable.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:multi_select_item/multi_select_item.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
+
+class NumberList {
+  String number;
+  int index;
+  NumberList({required this.number, required this.index});
+}
 
 class DeliveryData extends StatefulWidget {
   @override
@@ -25,26 +38,55 @@ class DeliveryData extends StatefulWidget {
 
 class DeliveryDataState extends State<DeliveryData> {
 
-  List<OrderList> orderlist = [];
+  List<OrderList> order_list = [];
+  List<String> payment_details = [];
   late ArsProgressDialog progressDialog;
-  bool select_all =false;
-  String empid = "",name="",mobile="";
-  double amount=0.0;
+  bool select_all = false;
+  String empid = "", name = "", mobile = "";
+  double amount = 0.0;
+  // String payment_details = "";
   Map<String, bool> values = {
     'COD': false,
     'PAYTM': false,
-    'Online Payment': false,
   };
+
+  List<NumberList> nList = [
+    NumberList(
+      index: 1,
+      number: "COD",
+    ),
+    NumberList(
+      index: 2,
+      number: "Paytm",
+    ),
+    NumberList(
+      index: 3,
+      number: "Net Banking",
+    ),
+  ];
 
   MultiSelectController controller = new MultiSelectController();
   TextEditingController reference_id = new TextEditingController();
+  TextEditingController bal_amtc = new TextEditingController();
+
   bool valuefirst = false;
   bool valuesecond = false;
   List<Items> json_data = [];
-  String payment_details="";
+  int item_val =0;
+  List<int> json_payment = [];
+  List<PaymentJSON> list_data=[];
+  List<Paymentdetails> payment_data = [];
+  List<Payment> delivery_data = [];
+  String _connectionStatus = 'Unknown';
+  final Connectivity _connectivity = Connectivity();
+  late StreamSubscription<ConnectivityResult> _connectivitySubscription;
   late ExpandableController categoryController;
   final paymenthepler = PaymentDatabaseHelper.instance;
-  // final dbHelper = DatabaseHelper.instance;
+  String radioItemHolder = '';
+  final _formKey = GlobalKey<FormState>();
+  bool bal_amt = false,ref_amt=false;
+  // Group Value for Radio Button.
+  int id = 1;
 
   @override
   void initState() {
@@ -54,609 +96,976 @@ class DeliveryDataState extends State<DeliveryData> {
         blur: 2,
         backgroundColor: Color(0x33000000),
         animationDuration: Duration(milliseconds: 500));
-    checkinternetconnection();
+
+    // Provider.of<ConnectivityProvider>(context,listen:false).startMonitioring();
+    _connectivitySubscription =
+        _connectivity.onConnectivityChanged.listen(_updateConnectionStatus);
+    initConnectivity();
+    // updatepaymentdata();
     getuserdata();
+    // _queryAll();
+    // _queryPaymentAll();
   }
 
-  getuserdata() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      //   empid = prefs.getString('empid')!;
-      // print("empid$empid");
-    });
-    progressDialog.show();
-    getdeliverydata(empid);
-
+  @override
+  void dispose() {
+    _connectivitySubscription.cancel();
+    super.dispose();
   }
-  checkinternetconnection() async{
-    var connectivityResult = await (Connectivity().checkConnectivity());
-    if (connectivityResult == ConnectivityResult.mobile) {
 
-    } else if (connectivityResult == ConnectivityResult.wifi) {
+  /*init*/
+  Future<void> initConnectivity() async {
+    ConnectivityResult result = ConnectivityResult.none;
+    // Platform messages may fail, so we use a try/catch PlatformException.
+    try {
+      result = await _connectivity.checkConnectivity();
+    } on PlatformException catch (e) {
+      print(e.toString());
+    }
 
+    if (!mounted) {
+      return Future.value(null);
+    }
+
+    return _updateConnectionStatus(result);
+  }
+
+  Future<void> _updateConnectionStatus(ConnectivityResult result) async {
+    switch (result) {
+      case ConnectivityResult.wifi:
+      case ConnectivityResult.mobile:
+      case ConnectivityResult.none:
+        setState(() => _connectionStatus = 'Failed to get connectivity');
+        break;
+      default:
+        setState(() => _connectionStatus = 'Failed to get connectivity.');
+        break;
     }
   }
+
+  /*checkconnnection*/
+  checkuserconnection() {}
+
+  /* to receive empid*/
+  getuserdata() async {
+    progressDialog.dismiss();
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    // setState(() {
+    //   empid = prefs.getString('empid')!;
+    //   // print("empid$empid");
+    // });
+
+    progressDialog.show();
+    getdeliverydata(empid);
+  }
+
+  /*check interet for delivery data*/
+  checkinternetconnection(String status) async {
+
+    try {
+      final result = await InternetAddress.lookup('www.google.com');
+      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+
+        updatepaymentdata(status);
+      }
+    } on SocketException catch (_) {
+      json_data.forEach((element) {
+        _insert(element.item_id, status);
+      });
+    }
+
+  }
+
+  /*check internet for payment data*/
+  // checkinternetpayment(String name, String mobile, double amount,
+  //     String reference, String payment_details) async {
+  //   try {
+  //     final result = await InternetAddress.lookup('www.google.com');
+  //     if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+  //       updatepaymentdata();
+  //       //  insertpayment(name, mobile, amount, reference_id.text, payment_details);
+  //     }
+  //   } on SocketException catch (_) {
+  //     insertpayment(name, mobile, amount, reference_id.text, payment_details);
+  //   }
+  //   Navigator.pop(context);
+  // }
+
   @override
   Widget build(BuildContext context) {
     var isSelected = false;
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Color(0xff18325e),
-        title: Text("Delivery Details"),
-        actions: <Widget>[
-          Visibility(
-            visible: select_all==true?select_all = true: select_all =false,
-            child: Row(
-              children: [
-                IconButton(
-                  icon: new Icon(Icons.save),
-                  onPressed: () =>  updatestatus("Delivered")
-                ),
-
-                IconButton(
-                  icon: new Icon(Icons.close),
-                  onPressed: () => updatestatus("Cancel"),
-                ),
-              ],
-            )
-          )
-        ],
-
-      ),
-      body: ExpandableTheme(
-        data: const ExpandableThemeData(
-          iconColor: Colors.blue,
-          useInkWell: true,
+        appBar: AppBar(
+          backgroundColor: Color(0xff18325e),
+          title: Text("Delivery Details"),
+          actions: <Widget>[
+            Visibility(
+                visible:
+                    select_all == true ? select_all = true : select_all = false,
+                child: Row(
+                  children: [
+                    IconButton(
+                        icon: new Icon(Icons.save),
+                        onPressed: () =>
+                            _displayTextInputDialog(context, "Delivered")),
+                    IconButton(
+                        icon: new Icon(Icons.close),
+                        onPressed: () => checkinternetconnection('Cancel')),
+                  ],
+                ))
+          ],
         ),
-        child: ListView(
-          physics: const BouncingScrollPhysics(),
-          children: <Widget>[
-            for (int i = 0; i < orderlist.length; i++)
-              Column(
+        body: _connectionStatus == "Failed to get connectivity."
+            ? nointernet()
+            : getlayout());
+  }
+
+  showlist() {
+    json_data.forEach((element) {
+      print("${element.item_id}");
+    });
+  }
+
+  Future<bool> _onBackPressed() async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) => new AlertDialog(
+            title: new Text('Are you sure?'),
+            content: new Text('Do you want to exit App ?'),
+            actions: <Widget>[
+              Row(
                 children: [
-                  for (int i = 0; i < orderlist.length; i++)
-                    Container(
-                        child: Column(children: [
-                      Align(
-                        alignment: Alignment.topCenter,
-                        child: ExpandableNotifier(
-                            child: Padding(
-                          padding: const EdgeInsets.all(1),
-                          child: Card(
-                            color:Color(0xFFCFD8DC),
-                            clipBehavior: Clip.antiAlias,
-                            child: Column(
-                              children: <Widget>[
-                                ScrollOnExpand(
-                                  scrollOnExpand: true,
-                                  scrollOnCollapse: false,
-                                  child: ExpandablePanel(
-                                 //  controller: categoryController,
-                                    theme: const ExpandableThemeData(
-                                      headerAlignment:
-                                          ExpandablePanelHeaderAlignment.center,
-                                      tapBodyToCollapse: false,
-                                    ),
-                                    header: Container(
-                                      decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.only(
-                                              topLeft: Radius.circular(10.0),
-                                              topRight: Radius.circular(10.0),
-                                              bottomLeft: Radius.circular(10.0),
-                                              bottomRight:
-                                                  Radius.circular(10.0))),
-                                      child: Align(
-                                        alignment: Alignment.topCenter,
-                                        child: Padding(
-                                          padding: EdgeInsets.only(
-                                              left: 10,
-                                              top: 10,
-                                              right: 10,
-                                              bottom: 10),
-                                          child: Container(
-                                            child: Column(
-                                                children: [
-
-                                              Align(
-                                                  alignment:
-                                                      Alignment.centerLeft,
-                                                  child: Padding(
-                                                    padding: EdgeInsets.all(5),
-                                                    child: Text(
-                                                      orderlist[i].custName,
-                                                      style: TextStyle(
-                                                          fontWeight:
-                                                              FontWeight.bold),
-                                                    ),
-                                                  )),
-                                              Align(
-                                                  alignment:
-                                                      Alignment.centerLeft,
-                                                  child: Padding(
-                                                    padding: EdgeInsets.all(5),
-                                                    child: Text(orderlist[i]
-                                                        .custMobile),
-                                                  )),
-                                              Align(
-                                                  alignment:
-                                                      Alignment.centerLeft,
-                                                  child: Padding(
-                                                    padding: EdgeInsets.all(5),
-                                                    child: Text(
-                                                        orderlist[i].address),
-                                                  )),
-                                            ]),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    collapsed: Container(
-                                      child: Column(children: [
-
-                                      ]),
-                                    ),
-                                    expanded: Column(
-                                      crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                      children: <Widget>[
-
-                                        Align(
-                                          alignment: Alignment.center,
-                                          child: Row(
-                                            children: [
-                                              Expanded(
-                                                  child: Text(
-                                                "Id",
-                                                style: TextStyle(
-                                                    color: Colors.black,
-                                                    fontWeight:
-                                                        FontWeight.bold),
-                                                textAlign: TextAlign.center,
-                                              )),
-                                              Expanded(
-                                                  child: Text(
-                                                "Items",
-                                                style: TextStyle(
-                                                    color: Colors.black,
-                                                    fontWeight:
-                                                        FontWeight.bold),
-                                                textAlign: TextAlign.center,
-                                              )),
-                                              Expanded(
-                                                  child: Text(
-                                                "Rate",
-                                                style: TextStyle(
-                                                    color: Colors.black,
-                                                    fontWeight:
-                                                        FontWeight.bold),
-                                                textAlign: TextAlign.center,
-                                              )),
-                                              Expanded(
-                                                  child: Text(
-                                                "Quantity",
-                                                style: TextStyle(
-                                                    color: Colors.black,
-                                                    fontWeight:
-                                                        FontWeight.bold),
-                                                textAlign: TextAlign.center,
-                                              )),
-                                              Expanded(
-                                                  child: Text(
-                                                "Total",
-                                                style: TextStyle(
-                                                    color: Colors.black,
-                                                    fontWeight:
-                                                        FontWeight.bold),
-                                                textAlign: TextAlign.center,
-                                              )),
-                                              Expanded(
-                                                  child: Text(
-                                                "Status",
-                                                style: TextStyle(
-                                                    color: Colors.black,
-                                                    fontWeight:
-                                                        FontWeight.bold),
-                                                textAlign: TextAlign.center,
-                                              )),
-                                            ],
-                                          ),
-                                        ),
-
-                                        Divider(
-                                          height: 5,
-                                          thickness: 5,
-                                          indent: 20,
-                                          endIndent: 20,
-                                        ),
-
-                                        Container(
-                                          padding: EdgeInsets.all(10),
-                                          child: Column(
-                                            children: [
-                                              for (int j = 0;j < orderlist[i].itemDetails.length;j++)
-                                                //for (var _ in Iterable.generate(orderlist[i].itemDetails.length))
-                                            Container(
-                                            color: controller.isSelected(i)
-                                            ? Colors.grey[600]
-                                            : Color(0xFFCFD8DC),
-                                               child: MultiSelectItem(
-                                                  isSelecting:
-                                                  controller.isSelecting,
-                                                  onSelected: () {
-                                                    setState(() {
-                                                      controller.toggle(i);
-                                                   //   print(orderlist[i].itemDetails[j].itemId);
-                                                      select_all = true;
-                                                      name =  orderlist[i].custName;
-                                                      mobile = orderlist[i].custMobile;
-                                                      amount = orderlist[i].itemDetails[j].itemTotalAmount;
-                                                      json_data.add(Items(orderlist[i].itemDetails[j].itemId));
-                                                    }
-                                                   );
-                                                  },
-
-                                                  child: Padding(
-                                                      padding: EdgeInsets.only(
-                                                          bottom: 10),
-                                                      child: Row(
-                                                        children: [
-                                                          if (orderlist[i].itemDetails[j].active =="Pending")
-                                                         //  progressDialog.dismiss(),
-                                                          Expanded(child: Text(orderlist[i].itemDetails[j].id.toString())),
-                                                          if (orderlist[i].itemDetails[j].active =="Pending")
-                                                          Expanded(child: Text(orderlist[i].itemDetails[j].itemName)),
-                                                          if (orderlist[i].itemDetails[j].active =="Pending")
-                                                          Expanded(child: Text(orderlist[i].itemDetails[j].itemRate.toString())),
-                                                          if (orderlist[i].itemDetails[j].active =="Pending")
-                                                          Expanded(child: Text(orderlist[i].itemDetails[j].itemQty.toString())),
-                                                          if (orderlist[i].itemDetails[j].active =="Pending")
-                                                          Expanded(child: Text(orderlist[i]
-                                                                  .itemDetails[
-                                                                      j]
-                                                                  .itemTotalAmount
-                                                                  .toString())),
-                                                          if (orderlist[i].itemDetails[j].active =="Pending")
-                                                          Expanded(
-                                                              child: Text(orderlist[
-                                                                      i]
-                                                                  .itemDetails[
-                                                                      j]
-                                                                  .active
-                                                                  .toString())),
-
-                                                        ],
-                                                      )
-                                                  ),
-                                                ),
-                                            )
-                                            ],
-                                          ),
-                                        ),
-
-                                      ],
-                                    ),
-                                  ),
+                  Expanded(
+                    child: new GestureDetector(
+                        onTap: () => Navigator.of(context).pop(false),
+                        child: Padding(
+                          padding: EdgeInsets.all(5),
+                          child: Container(
+                              decoration: BoxDecoration(
+                                color: const Color(0xff18325e),
+                                borderRadius:
+                                    BorderRadius.all(Radius.circular(15.0)),
+                              ),
+                              width: double.infinity,
+                              height: 40,
+                              child: Align(
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    "No",
+                                    style: TextStyle(color: Colors.white),
+                                  ))),
+                        )),
+                  ),
+                  Expanded(
+                    child: new GestureDetector(
+                        onTap: () => exit(0),
+                        child: Padding(
+                            padding: EdgeInsets.all(5),
+                            child: Container(
+                                decoration: BoxDecoration(
+                                  color: const Color(0xff18325e),
+                                  borderRadius:
+                                      BorderRadius.all(Radius.circular(15.0)),
                                 ),
-                              ],
-                            ),
-                          ),
-                         )
-                        ),
-                      ),
-                    ]
-                   )
+                                width: double.infinity,
+                                height: 40,
+                                child: Align(
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      "Yes",
+                                      style: TextStyle(color: Colors.white),
+                                    ))))),
                   )
                 ],
               )
-          ],
-        ),
-      ),
-    );
+            ],
+          ),
+        ) ??
+        false;
   }
 
+  nointernet() {
+    Fluttertoast.showToast(
+        msg: "No internet connection",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.black,
+        textColor: Colors.white,
+        fontSize: 16.0);
+  }
+
+  Widget getlayout() {
+    return ExpandableTheme(
+      data: const ExpandableThemeData(
+        iconColor: Colors.blue,
+        useInkWell: true,
+      ),
+      child: ListView(
+        physics: const BouncingScrollPhysics(),
+        children: <Widget>[
+          for (int i = 0; i < order_list.length; i++)
+            Container(
+                child: Column(children: [
+              Align(
+                alignment: Alignment.topCenter,
+                child: ExpandableNotifier(
+                    child: Padding(
+                  padding: const EdgeInsets.all(1),
+                  child: Card(
+                    color: Color(0xFFCFD8DC),
+                    clipBehavior: Clip.antiAlias,
+                    child: Column(
+                      children: <Widget>[
+                        ScrollOnExpand(
+                          scrollOnExpand: true,
+                          scrollOnCollapse: false,
+                          child: ExpandablePanel(
+                            //  controller: categoryController,
+                            theme: const ExpandableThemeData(
+                              headerAlignment:
+                                  ExpandablePanelHeaderAlignment.center,
+                              tapBodyToCollapse: false,
+                            ),
+                            header: Container(
+                              decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.only(
+                                      topLeft: Radius.circular(50.0),
+                                      topRight: Radius.circular(10.0),
+                                      bottomLeft: Radius.circular(10.0),
+                                      bottomRight: Radius.circular(10.0))),
+                              child: Align(
+                                alignment: Alignment.topCenter,
+                                child: Padding(
+                                  padding: EdgeInsets.only(
+                                      left: 10, top: 10, right: 10, bottom: 10),
+                                  child: Container(
+                                    child: Column(children: [
+                                      Align(
+                                          alignment: Alignment.centerLeft,
+                                          child: Padding(
+                                            padding: EdgeInsets.all(5),
+                                            child: Text(
+                                              order_list[i].custName,
+                                              style: GoogleFonts.lato(
+                                                textStyle: TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.bold),
+                                              ),
+                                            ),
+                                          )),
+                                      Align(
+                                          alignment: Alignment.centerLeft,
+                                          child: Padding(
+                                              padding: EdgeInsets.all(5),
+                                              child:
+                                                  Text(order_list[i].custMobile,
+                                                      style: GoogleFonts.lato(
+                                                        textStyle: TextStyle(),
+                                                      )))),
+                                      Align(
+                                          alignment: Alignment.centerLeft,
+                                          child: Padding(
+                                              padding: EdgeInsets.all(5),
+                                              child: Text(order_list[i].address,
+                                                  style: GoogleFonts.lato(
+                                                    textStyle: TextStyle(),
+                                                  )))),
+                                    ]),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            collapsed: Container(
+                              child: Column(children: []),
+                            ),
+                            expanded: Column(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: <Widget>[
+                                Align(
+                                  alignment: Alignment.center,
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                          child: Text(
+                                        "Id",
+                                        style: TextStyle(
+                                            color: Colors.black,
+                                            fontWeight: FontWeight.bold),
+                                        textAlign: TextAlign.center,
+                                      )),
+                                      Expanded(
+                                          child: Text(
+                                        "Items",
+                                        style: TextStyle(
+                                            color: Colors.black,
+                                            fontWeight: FontWeight.bold),
+                                        textAlign: TextAlign.center,
+                                      )),
+                                      Expanded(
+                                          child: Text(
+                                        "Rate",
+                                        style: TextStyle(
+                                            color: Colors.black,
+                                            fontWeight: FontWeight.bold),
+                                        textAlign: TextAlign.center,
+                                      )),
+                                      Expanded(
+                                          child: Text(
+                                        "Quantity",
+                                        style: TextStyle(
+                                            color: Colors.black,
+                                            fontWeight: FontWeight.bold),
+                                        textAlign: TextAlign.center,
+                                      )),
+                                      Expanded(
+                                          child: Text(
+                                        "Total",
+                                        style: TextStyle(
+                                            color: Colors.black,
+                                            fontWeight: FontWeight.bold),
+                                        textAlign: TextAlign.center,
+                                      )),
+                                      Expanded(
+                                          child: Text(
+                                        "Status",
+                                        style: TextStyle(
+                                            color: Colors.black,
+                                            fontWeight: FontWeight.bold),
+                                        textAlign: TextAlign.center,
+                                      )),
+                                    ],
+                                  ),
+                                ),
+                                Divider(
+                                  height: 5,
+                                  thickness: 5,
+                                  indent: 20,
+                                  endIndent: 20,
+                                ),
+                                Container(
+                                    padding: EdgeInsets.all(10),
+                                    height: 200,
+                                    width: MediaQuery.of(context).size.width,
+                                    child: ListView.builder(
+                                        itemCount:
+                                            order_list[i].itemDetails.length,
+                                        itemBuilder: (context, index) {
+                                          return GestureDetector(
+                                              onLongPress: () {
+                                                // setState(() {
+                                                //   controller.isSelected(index)?
+                                                //   json_payment.add(order_list[i]
+                                                //       .itemDetails[index]
+                                                //       .itemId):removedata(i,index,order_list[i].itemDetails[index].itemId);
+                                                // });
+                                              },
+                                              child: MultiSelectItem(
+                                                  isSelecting:
+                                                      controller.isSelecting,
+                                                  onSelected: () {
+                                                    setState(() {
+                                                      order_list[i]
+                                                          .itemDetails[index]
+                                                          .IsSelect = true;
+                                                      controller.toggle(index);
+                                                      //print(orderlist[i].itemDetails[j].itemId);
+                                                      select_all = true;
+                                                      // controller.isSelected(index)?
+                                                      // select_all = true:select_all = false;
+                                                      controller
+                                                              .isSelected(index)
+                                                          ? addlist(i, index)
+                                                          : removedata(i,
+                                                              index,
+                                                              order_list[i]
+                                                                  .itemDetails[
+                                                                      index]
+                                                                  .itemId);
+                                                      name = order_list[i]
+                                                          .custName;
+                                                      mobile = order_list[i]
+                                                          .custMobile;
+                                                      amount = order_list[i]
+                                                          .itemDetails[index]
+                                                          .itemTotalAmount;
+                                                      json_payment.add(order_list[i]
+                                                          .itemDetails[index]
+                                                          .itemId);
+                                                      // print(order_list[i]
+                                                      //     .itemDetails[index]
+                                                      //     .itemId);
+                                                      // json_data.add(Items(
+                                                      //     order_list[i]
+                                                      //         .itemDetails[index]
+                                                      //         .itemId));
+                                                    });
+                                                  },
+                                                  child: Container(
+                                                    child: Padding(
+                                                        padding:
+                                                            EdgeInsets.only(
+                                                                bottom: 10),
+                                                        child: Row(
+                                                          children: [
+                                                            if (order_list[i]
+                                                                    .itemDetails[
+                                                                        index]
+                                                                    .active ==
+                                                                "Pending")
+                                                              //  progressDialog.dismiss(),
+                                                              Expanded(
+                                                                  child: Text(
+                                                                order_list[i]
+                                                                    .itemDetails[
+                                                                        index]
+                                                                    .itemId
+                                                                    .toString(),
+                                                                textAlign:
+                                                                    TextAlign
+                                                                        .center,
+                                                              )),
+                                                            if (order_list[i]
+                                                                    .itemDetails[
+                                                                        index]
+                                                                    .active ==
+                                                                "Pending")
+                                                              Expanded(
+                                                                  child: Text(
+                                                                order_list[i]
+                                                                    .itemDetails[
+                                                                        index]
+                                                                    .itemName,
+                                                                textAlign:
+                                                                    TextAlign
+                                                                        .center,
+                                                              )),
+                                                            if (order_list[i]
+                                                                    .itemDetails[
+                                                                        index]
+                                                                    .active ==
+                                                                "Pending")
+                                                              Expanded(
+                                                                  child: Text(
+                                                                order_list[i]
+                                                                    .itemDetails[
+                                                                        index]
+                                                                    .itemRate
+                                                                    .toString(),
+                                                                textAlign:
+                                                                    TextAlign
+                                                                        .center,
+                                                              )),
+                                                            if (order_list[i]
+                                                                    .itemDetails[
+                                                                        index]
+                                                                    .active ==
+                                                                "Pending")
+                                                              Expanded(
+                                                                  child: Text(
+                                                                order_list[i]
+                                                                    .itemDetails[
+                                                                        index]
+                                                                    .itemQty
+                                                                    .toString(),
+                                                                textAlign:
+                                                                    TextAlign
+                                                                        .center,
+                                                              )),
+                                                            if (order_list[i]
+                                                                    .itemDetails[
+                                                                        index]
+                                                                    .active ==
+                                                                "Pending")
+                                                              Expanded(
+                                                                  child: Text(
+                                                                order_list[i]
+                                                                    .itemDetails[
+                                                                        index]
+                                                                    .itemTotalAmount
+                                                                    .toString(),
+                                                                textAlign:
+                                                                    TextAlign
+                                                                        .center,
+                                                              )),
+                                                            if (order_list[i]
+                                                                    .itemDetails[
+                                                                        index]
+                                                                    .active ==
+                                                                "Pending")
+                                                              Expanded(
+                                                                  child: Text(
+                                                                order_list[i]
+                                                                    .itemDetails[
+                                                                        index]
+                                                                    .active
+                                                                    .toString(),
+                                                                textAlign:
+                                                                    TextAlign
+                                                                        .center,
+                                                              )),
+                                                          ],
+                                                        )),
+                                                    decoration: order_list[i]
+                                                                    .itemDetails[
+                                                                        index]
+                                                                    .IsSelect ==
+                                                                true &&
+                                                            controller
+                                                                .isSelected(
+                                                                    index)
+                                                        ? new BoxDecoration(
+                                                            color: Colors
+                                                                .grey[500])
+                                                        : new BoxDecoration(),
+                                                  )));
+                                        })),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )),
+              ),
+            ]))
+        ],
+      ),
+    );
+
+  }
+
+  addlist(int i, int index) {
+   // print(order_list[i].itemDetails[index].itemId);
+    json_data.clear();
+    json_data.add(Items(order_list[i].itemDetails[index].itemId));
+    json_data.forEach((element) {
+      print("add item${element.item_id}");
+    });
+  }
+
+  removedata(int i, int index, int val) {
+    // reference_id="" as TextEditingController;
+    // bal_amtc= "" as TextEditingController;
+    reference_id.clear();
+    bal_amtc.clear();
+    order_list[i].itemDetails[index].IsSelect = false;
+
+    json_data.removeWhere((item) => item.item_id == val);
+
+    print(json_data.length);
+    if (json_data.length == 0 && select_all == true) {
+      setState(() {
+        select_all = false;
+      });
+    }
+  }
+
+  /*get delivery details online*/
   Future getdeliverydata(String empid) async {
-   // progressDialog.show();
+    // progressDialog.show();
     Map<String, String> headers = {
       'Content-Type': 'application/json',
     };
 
     var response = await http.get(
-        Uri.parse('http://164.52.200.38:90/DeliveryPanel/Delivery/10045'),
+        Uri.parse('http://164.52.200.38:90/DeliveryPanel/Delivery/10044'),
         headers: headers);
 
     Order_List order_data = Order_List.fromJson(json.decode(response.body));
 
     for (int i = 0; i < order_data.orderList.length; i++) {
-
-     for (int j = 0; j < order_data.orderList[i].itemDetails.length; j++){
-
+      for (int j = 0; j < order_data.orderList[i].itemDetails.length; j++) {
         if (order_data.orderList[i].itemDetails[j].active == "Pending") {
-
           setState(() {
-            orderlist.add(order_data.orderList[i]);
-           }
+            order_list.add(order_data.orderList[i]);
+          });
 
-          );
-
-          // for (int i = 0; i < order_data.orderList.length; i++) {
-          //   for (int j = 0; j < order_data.orderList[i].itemDetails.length; j++) {
-          //     if (order_data.orderList[i].itemDetails[j].active == "Pending") {
-          //       print(order_data.orderList[i].custName + "" + order_data.orderList[i].itemDetails[j].itemName + "" + order_data.orderList[i].itemDetails[j].active);
-          //     }
-          //   }
-          // }
-
-          // Fluttertoast.showToast(
-          //     msg: "${order_data.orderList[i].itemDetails[j].itemId}",
-          //     toastLength: Toast.LENGTH_SHORT,
-          //     gravity: ToastGravity.BOTTOM,
-          //     timeInSecForIosWeb: 1,
-          //     backgroundColor: Colors.black,
-          //     textColor: Colors.white,
-          //     fontSize: 16.0);
           progressDialog.dismiss();
         } else {
           progressDialog.dismiss();
-          // Fluttertoast.showToast(
-          //     msg: "Sorry No Data",
-          //     toastLength: Toast.LENGTH_SHORT,
-          //     gravity: ToastGravity.BOTTOM,
-          //     timeInSecForIosWeb: 1,
-          //     backgroundColor: Colors.black,
-          //     textColor: Colors.white,
-          //     fontSize: 16.0);
         }
+      }
+    }
+
+    if (order_list.length == 0) {
+      Fluttertoast.showToast(
+          msg: "Sorry No Data",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          timeInSecForIosWeb: 1,
+          backgroundColor: Colors.black,
+          textColor: Colors.white,
+          fontSize: 16.0);
+         Navigator.pushReplacement(context,MaterialPageRoute(builder: (BuildContext context) => super.widget));
+    }
+    //
+    // for (int i = 0; i < order_data.orderList.length; i++) {
+    //   for (int j = 0; j < order_data.orderList[i].itemDetails.length; j++) {
+    //     if (order_data.orderList[i].itemDetails[j].active == "Pending") {
+    //       print(order_data.orderList[i].custName + "" + order_data.orderList[i].itemDetails[j].itemName + "" + order_data.orderList[i].itemDetails[j].active);
+    //     }
+    //   }
+    // }
+  }
+
+  /*insert update online*/
+  Future updatestatus(String status) async {
+    var response = await http.post(
+      Uri.parse(
+          'http://164.52.200.38:90/DeliveryPanel/PostDelivery?ActionName=$status'),
+      body: jsonEncode(json_data),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    );
+
+    Map<String, dynamic> response_data = json.decode(response.body);
+    Fluttertoast.showToast(
+        msg: "Delivery Record updated succesfully",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.black,
+        textColor: Colors.white,
+        fontSize: 16.0);
+
+    setState(() {
+      select_all = false;
+    });
+    // updatepaymentdata();
+    json_data.clear();
+    Navigator.pop(context);
+    Navigator.pushReplacement(context,
+        MaterialPageRoute(builder: (BuildContext context) => super.widget));
+  }
+
+  /*insert payment details*/
+  Future updatepaymentdata(String status) async {
+    int result=0;
+    int bal;
+    print("${bal_amtc.text}");
+    if(bal_amtc.text==""){
+      bal =0;
+      result=amount.toInt();
+    }else{
+      bal = int.tryParse(bal_amtc.text)!;
+
+      if(amount.toInt()>bal){
+        result= amount.toInt() - int.tryParse(bal_amtc.text)!;
       }
 
     }
+    print("$bal$result");
+    json_data.forEach((element) {
+      payment_details.forEach((paymentelement) {
+        if (paymentelement=="COD") {
+          list_data.add(PaymentJSON(
+              element.item_id, paymentelement, result, 10081));
+        } else {
+          list_data.add(PaymentJSON(
+              element.item_id, paymentelement, bal, 10081));
+        }
+      });
+    });
 
-    // for (int i = 0; i < order_data.orderList.length; i++) {
-    //  for (int j = 0; j < order_data.orderList[i].itemDetails.length; j++){
-    //     if (order_data.orderList[i].itemDetails[j].active == "Pending") {
-    //       print(orderlist[i].itemDetails[j].itemName);
-    //       setState(() {
-    //         orderlist.add(order_data.orderList[i]);
-    //         }
-    //       );
-    //       //
-    //       // for (int i = 0; i < orderlist.length; i++) {
-    //       //   print(orderlist[i].itemDetails[0].itemName);
-    //       // }
-    //
-    //       // Fluttertoast.showToast(
-    //       //     msg: "${order_data.orderList[i].itemDetails[j].itemId}",
-    //       //     toastLength: Toast.LENGTH_SHORT,
-    //       //     gravity: ToastGravity.BOTTOM,
-    //       //     timeInSecForIosWeb: 1,
-    //       //     backgroundColor: Colors.black,
-    //       //     textColor: Colors.white,
-    //       //     fontSize: 16.0);
-    //     } else {
-    //       // Fluttertoast.showToast(
-    //       //     msg: "Sorry No Data",
-    //       //     toastLength: Toast.LENGTH_SHORT,
-    //       //     gravity: ToastGravity.BOTTOM,
-    //       //     timeInSecForIosWeb: 1,
-    //       //     backgroundColor: Colors.black,
-    //       //     textColor: Colors.white,
-    //       //     fontSize: 16.0);
-    //     }
-    //
-    //  }
-    // }
+    //json_payment.add(PaymentDatas("COD",1234,itemid));
+    //json_payment.add(36199);
+    var response = await http.post(
+      Uri.parse('http://164.52.200.38:90/DeliveryPanel/Payment'),
+      body: jsonEncode(list_data),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    );
+
+    Map<String, dynamic> response_data = json.decode(response.body);
+    if(response_data['message']=="Record Save Successfully.."){
+      Fluttertoast.showToast(
+          msg: "Record Save Successfully..",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          timeInSecForIosWeb: 1,
+          backgroundColor: Colors.black,
+          textColor: Colors.white,
+          fontSize: 16.0);
+
+      Navigator.pop(context);
+      Navigator.pushReplacement(context,
+          MaterialPageRoute(builder: (BuildContext context) => super.widget));
+     updatestatus(status);
+    }else{
+      Fluttertoast.showToast(
+          msg: "Record Save Successfully..",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          timeInSecForIosWeb: 1,
+          backgroundColor: Colors.black,
+          textColor: Colors.white,
+          fontSize: 16.0);
+      Navigator.pop(context);
+      Navigator.pushReplacement(context,
+          MaterialPageRoute(builder: (BuildContext context) => super.widget));
+    }
+
   }
 
-  Future updatestatus(String status) async {
-     // json_data.forEach((element) {
-     //   _insert(element.item_id,status);
-     // }) ;
-
-
-   _displayTextInputDialog(context);
- //    json_data.forEach((element) {
- //        print(element.item_id);
- //    });
-    // print(json_data);
-
-    //
-    // var response = await http.post(
-    //   Uri.parse(
-    //       'http://164.52.200.38:90/DeliveryPanel/PostDelivery?ActionName=$status'),
-    //   body: jsonEncode(json_data),
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //   },
-    // );
-    //
-    // Map<String, dynamic> response_data = json.decode(response.body);
-    //
-    // if (response_data['message'] == "Record Updated Successfully..") {
-    //   Fluttertoast.showToast(
-    //       msg: "Record updated succesfully",
-    //       toastLength: Toast.LENGTH_SHORT,
-    //       gravity: ToastGravity.BOTTOM,
-    //       timeInSecForIosWeb: 1,
-    //       backgroundColor: Colors.black,
-    //       textColor: Colors.white,
-    //       fontSize: 16.0);
-    //   if(status=="Delivered"){
-    //
-    //    // Navigator.push(context,MaterialPageRoute(builder: (context) => PaymentDetails()));
-    //   }
-    //
-    //   setState(() {
-    //     select_all =false;
-    //   });
-    // } else {
-    //   Fluttertoast.showToast(
-    //       msg: "Record not Updated Something wrong please Try Again..",
-    //       toastLength: Toast.LENGTH_SHORT,
-    //       gravity: ToastGravity.BOTTOM,
-    //       timeInSecForIosWeb: 1,
-    //       backgroundColor: Colors.black,
-    //       textColor: Colors.white,
-    //       fontSize: 16.0);
-    // }
-
-    // Map<String, dynamic> response_data= json.decode(response.body);
-    //
-    // if(response_data['message']=="Record Updated Successfully.."){
-    //
-    //   Fluttertoast.showToast(
-    //       msg: "Record updated successfully",
-    //       toastLength: Toast.LENGTH_SHORT,
-    //       gravity: ToastGravity.BOTTOM,
-    //       timeInSecForIosWeb: 1,
-    //       backgroundColor: Colors.black,
-    //       textColor: Colors.white,
-    //       fontSize: 16.0);
-    //
-    // }else{
-    //
-    //   Fluttertoast.showToast(
-    //       msg: "Error",
-    //       toastLength: Toast.LENGTH_SHORT,
-    //       gravity: ToastGravity.BOTTOM,
-    //       timeInSecForIosWeb: 1,
-    //       backgroundColor: Colors.black,
-    //       textColor: Colors.white,
-    //       fontSize: 16.0);
-    //
-    // }
-  }
-
-  Future<void> _displayTextInputDialog(BuildContext context) async {
+  /* show custom payment dilaog*/
+  Future<void> _displayTextInputDialog(BuildContext context, String status) async {
     return showDialog(
         context: context,
         builder: (context) {
-          return AlertDialog(
-            title: Text('Payment Details'),
-            content: Container(
-              height: 400,
-              child: Column(
-                children: [
+          return StatefulBuilder(builder: (context, setState) {
+            return AlertDialog(
+              title: Text('Payment Details'),
+              content: SingleChildScrollView(
+                child: Container(
+                  height: 600,
+                  child: Column(
+                    children: [
+                      TextField(
+                        enabled: false,
+                        onChanged: (value) {
+                          // setState(() {
+                          //   valueText = value;
+                          // });
+                        },
+                        //   controller: _textFieldController,
+                        decoration: InputDecoration(
+                            labelText: name,
+                            labelStyle: TextStyle(
+                              color: Colors.black,
+                            )),
+                      ),
                   TextField(
-                    enabled: false,
+                        enabled: false,
+                        onChanged: (value) {
+                          // setState(() {
+                          //   valueText = value;
+                          // });
+                        },
+                        decoration: InputDecoration(
+                            labelText: mobile,
+                            labelStyle: TextStyle(color: Colors.black)),
+                      ),
 
-                    onChanged: (value) {
-                      // setState(() {
-                      //   valueText = value;
-                      // });
-                    },
-                    //   controller: _textFieldController,
-                    decoration: InputDecoration(labelText: name,labelStyle: TextStyle(
-                    color: Colors.black,
-                    )),
-                  ),
                   TextField(
-                    enabled: false,
-                    onChanged: (value) {
-                      // setState(() {
-                      //   valueText = value;
-                      // });
-                    },
+                        enabled: false,
+                        onChanged: (value) {},
+                        decoration: InputDecoration(
+                            labelText: amount.toString(),
+                            labelStyle: TextStyle(color: Colors.black)),
+                      ),
 
-                    decoration: InputDecoration(labelText: mobile,labelStyle: TextStyle(
-                      color: Colors.black)),
-                  ),
-                  TextField(
-                    enabled: false,
-                    onChanged: (value) {
-                      // setState(() {
-                      //   valueText = value;
-                      // });
-                    },
-                      controller: reference_id,
-                       decoration: InputDecoration(labelText: amount.toString(),labelStyle: TextStyle(
-                        color: Colors.black)),
-                  ),
-                  TextField(
-                    onChanged: (value) {
-                      // setState(() {
-                      //   valueText = value;
-                      // });
-                    },
-                    controller: reference_id,
-                    decoration: InputDecoration(hintText:"Reference Id"),
-                  ),
                   Container(
+                        child: Column(
+                          children: values.keys.map((String key) {
+                            return new CheckboxListTile(
+                              title: new Text(key),
+                              autofocus: true,
+                              activeColor: Colors.pink,
+                              checkColor: Colors.white,
+                              selected: values[key]!,
+                              value: values[key],
+                              onChanged: (bool? value) {
+                                setState(() {
+
+                                  if(key == "PAYTM" && value==false){
+                                    bal_amt = false;
+                                    bal_amt = false;
+                                  }else if (key == "PAYTM" && value==true && values['COD']== true) {
+                                    bal_amt = true;
+                                    ref_amt = true;
+                                    }else if (key == "COD" && value==false && values['PAYTM']== true){
+                                    bal_amt = false;
+                                    ref_amt = true;
+                                  }else if(key == "COD" && values['PAYTM']== true){
+                                    bal_amt = true;
+                                  }
+                                  values[key] = value!;
+                                  payment_details.add(key);
+                                }
+                               );
+                              },
+                            );
+                          }).toList(),
+                          // nList.map((data) => RadioListTile(
+                          //   title: Text("${data.number}"),
+                          //   groupValue: id,
+                          //   value: data.index,
+                          //   onChanged: (val) {
+                          //     setState(() {
+                          //       payment_details = data.number ;
+                          //       id = data.index;
+                          //     });
+                          //   },
+                          // )).toList(),
+                        ),
+                      ),
+                  
+                  Form(
+                    key:_formKey,
                     child: Column(
-                      children:values.keys.map((String key) {
-                        return new CheckboxListTile(
-                          title: new Text(key),
-                          activeColor: Colors.pink,
-                          checkColor: Colors.white,
-                          value: values[key],
-                          onChanged: (bool? value) {
-                            setState(() {
-                              values[key] = value!;
-                              payment_details = key;
-                            });
-                            print(key);
-                          },
-                        );
-                      }).toList(),
-                    ),
-                  )
+                    children: [
+                      Visibility(
+                        visible: ref_amt,
+                        child: TextFormField(
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter reference id';
+                            }},
+                          controller: reference_id,
+                          decoration: InputDecoration(hintText: "Reference Id"),
+                        ),
 
-                ],
+                      ),
+
+                      Visibility(
+                        visible: bal_amt,
+                        child: TextFormField(
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter paytm amount';
+                            }},
+                          controller: bal_amtc,
+                          decoration: InputDecoration(hintText: "Paytm Amount"),
+                        ),
+
+                      )
+                    ],
+                  ))
+
+
+                    ],
+                  ),
+                ),
               ),
+              actions: <Widget>[
+                FlatButton(
+                  color: Colors.red,
+                  textColor: Colors.white,
+                  child: Text('CANCEL'),
+                  onPressed: () {
+                    setState(() {
+                      Navigator.pop(context);
+                    });
+                  },
+                ),
+                FlatButton(
+                  color: Colors.green,
+                  textColor: Colors.white,
+                  child: Text('Submit'),
+                  onPressed: () {
+                    if (_formKey.currentState!.validate()) {
+                      setState(() {
+                        checkinternetconnection(status);
+
+                        //\  insertpayment(name,mobile,amount,reference_id.text,payment_details);
+                      });
+                    }
+                  }
             ),
-            actions: <Widget>[
+              ],
+            );
+          }
+         );
+        }
+       );
+     }
 
-              FlatButton(
-                color: Colors.red,
-                textColor: Colors.white,
-                child: Text('CANCEL'),
-                onPressed: () {
-                  setState(() {
-                    Navigator.pop(context);
-                  });
-                },
-              ),
-              FlatButton(
-                color: Colors.green,
-                textColor: Colors.white,
-                child: Text('Submit'),
-                onPressed: () {
-                  setState(() {
-                    insertpayment(name,mobile,amount,reference_id.text,payment_details);
-                   }
-                  );
-                },
-              ),
+  /* insert delivery details offline*/
+  void _insert(item_id, action) async {
 
-            ],
-          );
-        });
-  }
-  // void _insert(item_id, action) async {
-  //   // row to insert
-  //   Map<String, dynamic> row = {
-  //     DatabaseHelper.columnItem: item_id,
-  //     DatabaseHelper.columnAction: action
-  //   };
-  //   Payment payment = Payment.fromMap(row);
-  //   final id = await dbHelper.insert(payment);
-  //   print('inserted row id: $id');
-  //   // _showMessageInScaffold('inserted row id: $id');
-  //
-  // }
+    // progressDialog.show();
+    // json_data.forEach((element) {
+    //   print(element.item_id);
+    // });
 
-  void insertpayment(name,mobile,amount,reference_id,payment_details) async {
-   // print("$name$mobile$amount$reference_id$payment_details");
-    // row to insert
     Map<String, dynamic> row = {
-      PaymentDatabaseHelper.columnname : name,
-      PaymentDatabaseHelper.columnmobile : mobile,
-      PaymentDatabaseHelper.columnamount : amount,
-      PaymentDatabaseHelper.columnreferenceId : reference_id,
-      PaymentDatabaseHelper.columnpayment_details : payment_details,
+      DatabaseHelper.columnItem: item_id,
+      DatabaseHelper.columnAction: action
+    };
+    Payment payment = Payment.fromMap(row);
+    final id = await paymenthepler.insert(payment);
+    Fluttertoast.showToast(
+        msg: "Record saved Successfully",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.black,
+        textColor: Colors.white,
+        fontSize: 16.0);
+    progressDialog.dismiss();
+
+    Navigator.pushReplacement(context,
+        MaterialPageRoute(builder: (BuildContext context) => super.widget));
+  }
+
+  /* insert payment details offline*/
+  void insertpayment(
+      name, mobile, amount, reference_id, payment_details) async {
+    Map<String, dynamic> row = {
+      PaymentDatabaseHelper.columnname: name,
+      PaymentDatabaseHelper.columnmobile: mobile,
+      PaymentDatabaseHelper.columnamount: amount,
+      PaymentDatabaseHelper.columnreferenceId: reference_id,
+      PaymentDatabaseHelper.columnpayment_details: payment_details,
     };
     Paymentdetails payment = Paymentdetails.fromMap(row);
-    final id = await paymenthepler.insert(payment);
-    print('inserted row id: $id');
-
+    final id = await paymenthepler.insert_payment(payment);
+    Fluttertoast.showToast(
+        msg: "Record saved Successfully",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.black,
+        textColor: Colors.white,
+        fontSize: 16.0);
   }
 
+  // /*get delivery details*/
+  // void _queryAll() async {
+  //   // json_data.forEach((element) {
+  //   //   print(element);
+  //   // });
+  //   final rowcount = await paymenthepler.queryRowCountDelivery();
+  //   print("$rowcount");
+  //   if (rowcount > 0) {
+  //     final allRows = await paymenthepler.queryAllRows();
+  //     delivery_data.clear();
+  //     allRows.forEach((row) => delivery_data.add(Payment.fromMap(row)));
+  //     delivery_data.forEach((element) {
+  //       json_data.add(Items(element.item_id));
+  //      // print("delivery data $rowcount");
+  //      }
+  //     );
+  //   } else {
+  //    // print("no delivery data");
+  //   }
+  //   // updatestatus(status);
+  // }
+  // /*get payemnt details*/
+  // void _queryPaymentAll() async {
+  //   final rowcount = await paymenthepler.queryRowCountPayment();
+  //
+  //   if (rowcount > 0) {
+  //     final allRows = await paymenthepler.queryAllRowspayment();
+  //     payment_data.clear();
+  //     allRows.forEach((row) => payment_data.add(Paymentdetails.fromMap(row)));
+  //     payment_data.forEach((element) {
+  //       setState(() {
+  //         name = element.name;
+  //         mobile = element.mobile;
+  //         amount = element.amount;
+  //         payment_details = element.payment_details;
+  //         reference_id = element.reference_id as TextEditingController;
+  //       });
+  //     });
+  //   } else {
+  //     print("No Payment Data");
+  //   }
+  //  updatepaymentdata();
+  // }
 }
+

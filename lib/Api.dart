@@ -83,6 +83,42 @@ class DeliveryData extends StatefulWidget {
 
 }
 
+@override
+Widget build(BuildContext context) {
+  var isSelected = false;
+  return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Color(0xff18325e),
+        title: Text("Delivery Details"),
+        actions: <Widget>[
+          Visibility(
+              visible:
+              select_all == true ? select_all = true : select_all = false,
+              child: Row(
+                children: [
+                  IconButton(
+                      icon: new Icon(Icons.save),
+                      onPressed: () => checkinternetconnection("Delivered")),
+                  IconButton(
+                    icon: new Icon(Icons.close),
+                    onPressed: () => checkinternetconnection("Cancel"),
+                  ),
+                ],
+              ))
+        ],
+      ),
+      body: getlayout()
+  );
+}
+Widget getlayout(){
+  return Consumer<ConnectivityProvider>(
+    builder: (context,model,child) {
+      if(model.isOnline) {
+        return model.isOnline ? Center(): null;
+      }
+    },
+  );
+}
 class DeliveryDataState extends State<DeliveryData> {
   List<OrderList> orderlist = [];
   late ArsProgressDialog progressDialog;

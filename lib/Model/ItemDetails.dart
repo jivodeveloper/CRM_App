@@ -17,6 +17,7 @@ class ItemDetails {
   late String active;
   late Null payCharge;
   late double reciableAmt;
+  late bool IsSelect;
 
   ItemDetails(
       { required this.id,
@@ -34,7 +35,8 @@ class ItemDetails {
         required this.outQty,
         required this.active,
         required this.payCharge,
-        required this.reciableAmt});
+        required this.reciableAmt,
+        required this.IsSelect});
 
   ItemDetails.fromJson(Map<String, dynamic> json) {
     id = json['id'];
@@ -53,6 +55,7 @@ class ItemDetails {
     active = json['Active'];
     payCharge = json['PayCharge'];
     reciableAmt = json['ReciableAmt'];
+    IsSelect = json['IsSelect'];
   }
 
   Map<String, dynamic> toJson() {
@@ -73,6 +76,7 @@ class ItemDetails {
     data['Active'] = this.active;
     data['PayCharge'] = this.payCharge;
     data['ReciableAmt'] = this.reciableAmt;
+    data['IsSelect'] = this.IsSelect;
     return data;
   }
 }

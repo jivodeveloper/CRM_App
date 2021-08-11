@@ -17,7 +17,6 @@ class Paymentdetails{
     if (mobile != null) {
       map['name'] = name;
       map['mobile'] = mobile;
-
       map['amount'] = amount;
       map['reference_id'] = reference_id;
       map['payment_details'] = payment_details;

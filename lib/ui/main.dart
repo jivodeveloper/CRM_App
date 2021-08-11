@@ -1,16 +1,36 @@
+import 'package:crm_flutter/ui/ConnectionProblem.dart';
 import 'package:crm_flutter/ui/DeliveryData.dart';
 import 'package:crm_flutter/ui/PaymentDetails.dart';
+import 'package:crm_flutter/ui/SplashScreen.dart';
+import 'package:crm_flutter/ui/connectivity_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 void main() {
-  runApp(MaterialApp(
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-    debugShowCheckedModeBanner: false,
-      home: DeliveryData()
-  )
- );
+  runApp(new MyApp());
+ //  runApp(MaterialApp(
+ //      theme: ThemeData(
+ //        primarySwatch: Colors.blue,
+ //      ),
+ //    debugShowCheckedModeBanner: false,
+ //      home: DeliveryData()
+ //  )
+ // );
+}
+
+class MyApp extends StatelessWidget{
+
+  @override
+  Widget build(BuildContext context) {
+    return  MaterialApp(
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+        ),
+        debugShowCheckedModeBanner: false,
+        home: DeliveryData()
+    );
+  }
+
 }
 
 
