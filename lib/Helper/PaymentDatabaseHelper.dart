@@ -11,11 +11,12 @@ class PaymentDatabaseHelper{
   static final _databaseName = "CRM.db";
   static final _databaseVersion = 2;
   static final table_payment = 'paymentdetails';
-  static final columnname = 'name';
-  static final columnamount = 'amount';
-  static final columnreferenceId = 'reference_id';
+  static final itemId = 'itemId';
+  static final PayMode = 'PayMode';
+  static final ReferenceNumber = 'ReferenceNumber';
   static final columnpayment_details = 'payment_details';
-  static final columnmobile = 'mobile';
+  static final PayAmount = 'PayAmount';
+  static final deliveryBoyID = 'deliveryBoyID';
   static final table_delivery = 'deliverydetails';
   static final columnId = 'id';
   static final columnItem = 'item_id';
@@ -48,15 +49,16 @@ class PaymentDatabaseHelper{
 
     await db.execute('''
           CREATE TABLE $table_payment (
-            $columnname TEXT NOT NULL,
-            $columnamount TEXT NOT NULL,
-            $columnreferenceId TEXT NOT NULL, $columnmobile TEXT NOT NULL,$columnpayment_details TEXT NOT NULL)''');
+            $itemId TEXT NOT NULL,
+            $PayMode TEXT NOT NULL,
+            $ReferenceNumber TEXT NOT NULL, $PayAmount TEXT NOT NULL,$deliveryBoyID TEXT NOT NULL)''');
+
   }
 
   /*add to payment data*/
   Future<int> insert_payment(Paymentdetails payment) async {
     Database? db = await instance.database;
-    return await db!.insert(table_payment, {'name': payment.name,'mobile':payment.mobile, 'amount': payment.amount,'reference_id': payment.reference_id,'payment_details':payment.payment_details});
+    return await db!.insert(table_payment, {'itemId': payment.itemId,'PayMode':payment.PayMode, 'PayAmount': payment.PayAmount,'ReferenceNumber': payment.ReferenceNumber,'deliveryBoyID':payment.deliveryBoyID});
   }
 
   /*add to delivery data*/

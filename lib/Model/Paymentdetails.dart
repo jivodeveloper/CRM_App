@@ -1,25 +1,27 @@
 
 class Paymentdetails{
-  String name="";
-  String mobile="";
-  double amount=0.0;
-  String reference_id="";
-  String payment_details="";
+
+  String itemId="";
+  String PayMode="";
+  String PayAmount ="" ;
+  String deliveryBoyID="";
+  String ReferenceNumber="0";
 
   Map<String, Object?> toMap() {
     var map = <String, Object?>{
-      'name': name,
-      'mobile': mobile,
-      'amount': amount,
-      'reference_id': reference_id,
-      'payment_details' : payment_details
+      'itemId': itemId,
+      'PayMode': PayMode,
+      'PayAmount': PayAmount,
+      'ReferenceNumber': ReferenceNumber,
+      'deliveryBoyID' : deliveryBoyID
     };
-    if (mobile != null) {
-      map['name'] = name;
-      map['mobile'] = mobile;
-      map['amount'] = amount;
-      map['reference_id'] = reference_id;
-      map['payment_details'] = payment_details;
+
+    if (map != null) {
+      map['itemId'] = itemId;
+      map['PayMode'] = PayMode;
+      map['PayAmount'] = PayAmount;
+      map['ReferenceNumber'] = ReferenceNumber;
+      map['deliveryBoyID'] = deliveryBoyID;
     }
     return map;
   }
@@ -27,10 +29,11 @@ class Paymentdetails{
   Paymentdetails();
 
   Paymentdetails.fromMap(Map<String,dynamic> map) {
-    name = map['name'];
-    mobile = map['mobile'];
-    amount = map['amount'];
-    reference_id = map['reference_id'];
-    payment_details = map['payment_details'];
+    itemId = map['itemId'];
+    PayMode = map['PayMode'];
+    PayAmount = map['PayAmount'];
+    ReferenceNumber = map['ReferenceNumber'];
+    deliveryBoyID = map['deliveryBoyID'];
   }
+
 }
