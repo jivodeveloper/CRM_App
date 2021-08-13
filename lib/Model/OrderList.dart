@@ -1,6 +1,7 @@
 import 'ItemDetails.dart';
 
 class OrderList {
+
   late int id;
   late String custMobile;
   late String custName;

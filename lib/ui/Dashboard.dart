@@ -316,25 +316,6 @@ class DashBoardState extends State<Dashboard> {
                       )
                    ),
                 ),
-                //     if(parent_id[j]==22)
-                //       Padding(
-                //     padding: EdgeInsets.only(left: 40),
-                //     child: Align(
-                //        alignment: Alignment.centerLeft,
-                //        child: Row(
-                //           children: [
-                //           Image.asset(
-                //             'assets/Images/dot.png',
-                //             width: 7,
-                //             height: 7,
-                //           ),
-                //           Padding(padding: EdgeInsets.only(left: 10,top: 10)),
-                //           Text("Delivery Data"),
-                //         ],
-                //       )
-                //   ),
-                // ),
-
               ],
             )
       ],

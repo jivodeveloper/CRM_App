@@ -12,7 +12,7 @@ class Paymentdetails{
       'itemId': itemId,
       'PayMode': PayMode,
       'PayAmount': PayAmount,
-      'ReferenceNumber': ReferenceNumber,
+      'RefrenceNumber': ReferenceNumber,
       'deliveryBoyID' : deliveryBoyID
     };
 
@@ -20,7 +20,7 @@ class Paymentdetails{
       map['itemId'] = itemId;
       map['PayMode'] = PayMode;
       map['PayAmount'] = PayAmount;
-      map['ReferenceNumber'] = ReferenceNumber;
+      map['RefrenceNumber'] = ReferenceNumber;
       map['deliveryBoyID'] = deliveryBoyID;
     }
     return map;
