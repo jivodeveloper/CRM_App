@@ -6,6 +6,7 @@ import 'package:connectivity/connectivity.dart';
 import 'package:crm_flutter/Helper/DatabaseHelper.dart';
 import 'package:crm_flutter/Model/ItemDetails.dart';
 import 'package:crm_flutter/Model/PaymentJSON.dart';
+import 'package:crm_flutter/ui/Dashboard.dart';
 import 'package:flutter/scheduler.dart' show SchedulerBinding, timeDilation;
 import 'package:crm_flutter/Helper/PaymentDatabaseHelper.dart';
 import 'package:crm_flutter/Model/Items.dart';
@@ -154,10 +155,11 @@ class DeliveryDataState extends State<DeliveryData> {
   getuserdata() async {
     progressDialog.dismiss();
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    // setState(() {
-    //   empid = prefs.getString('empid')!;
-    //   // print("empid$empid");
-    // });
+    setState(() {
+      // empid = prefs.getString('empid')!;
+      empid = "10040";
+      // print("empid$empid");
+    });
 
     progressDialog.show();
     getdeliverydata(empid);
@@ -201,16 +203,16 @@ class DeliveryDataState extends State<DeliveryData> {
 
 
             insertpayment(element.item_id, paymentelement, bal_amtc.text, reference_id.text,
-                "10044", status);
+                int.parse(empid), status);
           } else if (paymentelement == "COD") {
             print("CODD${element.item_id}$paymentelement$result");
             insertpayment(element.item_id, paymentelement, result,
-                 reference_id.text,"10044", status);
+                 reference_id.text,empid, status);
           }
           else {
             print("CODDCODD${element.item_id}$paymentelement$bal");
             insertpayment(element.item_id, paymentelement, bal,
-                "10044", reference_id.text, status);
+                empid, reference_id.text, status);
           }
         });
       });
@@ -408,7 +410,7 @@ class DeliveryDataState extends State<DeliveryData> {
                                                                 .IsSelect = true;
                                                             controller
                                                                 .toggle(index);
-                                                            select_all = true;
+                                                           select_all = true;
                                                             controller.isSelected(index)
                                                                 ? addlist(indexx,index): removedata(indexx,index,order_list[indexx].itemDetails[index].itemId);
                                                             name = order_list[
@@ -574,7 +576,7 @@ class DeliveryDataState extends State<DeliveryData> {
                                                                   color: Colors
                                                                           .grey[
                                                                       500])
-                                                              : new BoxDecoration(),
+                                                              : new BoxDecoration()
                                                         ))
                                                 );
                                               }
@@ -589,13 +591,14 @@ class DeliveryDataState extends State<DeliveryData> {
                                   setState(() {
                                     Duration(seconds: 20000);
                                     selected = indexx;
-                                    controller.toggle(indexx);
+                                    // controller.toggle(indexx);
                                   }
                                  );
                                 else
                                   setState(() {
-                                    // order_list[indexx].itemDetails[index].IsSelect = true;
+                                    // order_list[indexx].itemDetails[0].IsSelect = false;
                                     controller.toggle(indexx);
+                                    select_all =false;
                                     selected = -1;
                                   });
                               })),
@@ -609,9 +612,15 @@ class DeliveryDataState extends State<DeliveryData> {
   }
 
   showlist() {
-    json_data.forEach((element) {
-      print("${element.item_id}");
-    });
+    setState(() {
+      select_all = false;
+      }
+    );
+    return new BoxDecoration();
+
+    // json_data.forEach((element) {
+    //   print("${element.item_id}");
+    // });
   }
 
   Future<bool> _onBackPressed() async {
@@ -997,6 +1006,7 @@ class DeliveryDataState extends State<DeliveryData> {
                           });
                         else
                           setState(() {
+                            select_all=false;
                             selected = -1;
                           });
                       })),
@@ -1008,7 +1018,7 @@ class DeliveryDataState extends State<DeliveryData> {
   }
 
   addlist(int i, int index) {
-    order_list[i].itemDetails[index].IsSelect = true;
+    // order_list[i].itemDetails[index].IsSelect = true;
 
     // //print(order_list[i].itemDetails[index].itemId);
     // if(order_list.indexWhere((element) => element.itemDetails[index] == index)){
@@ -1026,15 +1036,16 @@ class DeliveryDataState extends State<DeliveryData> {
   }
 
   removedata(int i, int index, int val) {
-    // reference_id="" as TextEditingController;
-    // bal_amtc= "" as TextEditingController;
+    json_data.forEach((element) {
+      print(element);
+    });
+
     reference_id.clear();
     bal_amtc.clear();
     order_list[i].itemDetails[index].IsSelect = false;
 
-    json_data.removeWhere((item) => item.item_id == val);
-
-    print(json_data.length);
+    json_data.removeAt(index);
+    // print("length${json_data.length}");
     if (json_data.length == 0 && select_all == true) {
       setState(() {
         select_all = false;
@@ -1050,7 +1061,7 @@ class DeliveryDataState extends State<DeliveryData> {
     };
 
     var response = await http.get(
-        Uri.parse('http://164.52.200.38:90/DeliveryPanel/Delivery/10040'),
+        Uri.parse('http://164.52.200.38:90/DeliveryPanel/Delivery/$empid'),
         headers: headers);
 
     var order_data = Order_List.fromJson(json.decode(response.body));
@@ -1063,12 +1074,14 @@ class DeliveryDataState extends State<DeliveryData> {
           setState(() {
            // if(!order_list.contains( order_data.orderList[i].custMobile))
               order_list.add(OrderList(id: order_data.orderList[i].id, custMobile: order_data.orderList[i].custMobile, custName: order_data.orderList[i].custName, zoneId: order_data.orderList[i].zoneId, zoneName: order_data.orderList[i].zoneName, areaId: order_data.orderList[i].areaId, areaName: order_data.orderList[i].areaName, stateId: order_data.orderList[i].stateId, stateName: order_data.orderList[i].stateName, landmark: order_data.orderList[i].landmark, address: order_data.orderList[i].address, pincode: order_data.orderList[i].pincode, totalPrice: order_data.orderList[i].totalPrice, totalQty: order_data.orderList[i].totalQty, paymentMode: order_data.orderList[i].paymentMode, paymentRemark: order_data.orderList[i].paymentRemark, paymentNumber: order_data.orderList[i].paymentNumber, remark: order_data.orderList[i].remark, callerId: order_data.orderList[i].callerId, deliveryAssignId: order_data.orderList[i].deliveryAssignId, deliveryAssignName: order_data.orderList[i].deliveryAssignName, deliveryAssignDate: order_data.orderList[i].deliveryAssignDate, callerName: order_data.orderList[i].callerName, source: order_data.orderList[i].source, insertedDate: order_data.orderList[i].insertedDate, itemCoupon: order_data.orderList[i].itemCoupon, itemDetails: order_data.orderList[i].itemDetails));
-              print("${order_list.contains(order_data.orderList[i].custMobile)}");
-              print("${order_list.contains(order_data.orderList[i].custMobile)}");
+              // print("${order_list.contains(order_data.orderList[i].custMobile)}");
+              // print("${order_list.contains(order_data.orderList[i].custMobile)}");
            // item_list.add(ItemDetails(id: order_data.orderList[i].itemDetails[j].id, itemId: order_data.orderList[i].itemDetails[j].itemId, itemName:order_data.orderList[i].itemDetails[j].itemName, itemQty: order_data.orderList[i].itemDetails[j].itemQty, uomValue:order_data.orderList[i].itemDetails[j].uomValue, itemRate: order_data.orderList[i].itemDetails[j].itemRate, itemTotalAmount: order_data.orderList[i].itemDetails[j].itemTotalAmount, coupon: order_data.orderList[i].itemDetails[j].coupon, deliveryRemark: order_data.orderList[i].itemDetails[j].deliveryRemark, uom: order_data.orderList[i].itemDetails[j].uom, rawItemName: order_data.orderList[i].itemDetails[j].rawItemName, inQty:order_data.orderList[i].itemDetails[j].inQty, outQty:order_data.orderList[i].itemDetails[j].outQty, active: order_data.orderList[i].itemDetails[j].active, payCharge: order_data.orderList[i].itemDetails[j].payCharge, reciableAmt:order_data.orderList[i].itemDetails[j].reciableAmt, IsSelect:order_data.orderList[i].itemDetails[j].IsSelect));
            }
           );
-         progressDialog.dismiss();
+
+        }else{
+
         }
       }
     }
@@ -1090,7 +1103,7 @@ class DeliveryDataState extends State<DeliveryData> {
     //
     //    }
     // );
-
+    progressDialog.dismiss();
     if (order_list.length == 0) {
       Fluttertoast.showToast(
           msg: "Sorry No Data",
@@ -1101,7 +1114,7 @@ class DeliveryDataState extends State<DeliveryData> {
           textColor: Colors.white,
           fontSize: 16.0);
       Navigator.pushReplacement(context,
-          MaterialPageRoute(builder: (BuildContext context) => super.widget));
+          MaterialPageRoute(builder: (BuildContext context) => Dashboard()));
     }
 
     //
@@ -1202,20 +1215,21 @@ class DeliveryDataState extends State<DeliveryData> {
     json_data.forEach((element) {
       payment_details.forEach((paymentelement) {
         if (paymentelement.trim() == "PAYTM" && ref_amt == true && bal_amt == false) {
-          //  print("Paytm${element.item_id}$paymentelement${amount.toInt()}${reference_id.text}");
+           print("Paytm${element.item_id}$paymentelement${amount.toInt()}${reference_id.text}");
           list_data.add(PaymentJSON(element.item_id, paymentelement,
-              amount.toInt(), 10044, reference_id.text));
+              amount.toInt(),int.parse(empid), reference_id.text));
         } else if (paymentelement == "COD") {
           list_data.add(PaymentJSON(element.item_id, paymentelement, result,
-              10044, reference_id.text));
-           //  print("CODD${element.item_id}$paymentelement$result");
+              int.parse(empid), reference_id.text));
+            print("CODD${element.item_id}$paymentelement$result");
         } else {
-          list_data.add(PaymentJSON(
-              element.item_id, paymentelement, bal, 10044, reference_id.text));
-           //   print("CODDCODD${element.item_id}$paymentelement$bal");
+          list_data.add(PaymentJSON(element.item_id, paymentelement, bal,int.parse(empid), reference_id.text));
+            print("CODDCODD${element.item_id}$paymentelement$bal");
         }
-      });
-    });
+       }
+      );
+     }
+    );
 
     //json_payment.add(PaymentDatas("COD",1234,itemid));
     //json_payment.add(36199);
@@ -1261,6 +1275,7 @@ class DeliveryDataState extends State<DeliveryData> {
             MaterialPageRoute(builder: (BuildContext context) => super.widget));
       });
    }
+    progressDialog.dismiss();
   }
 
   /* show custom payment dilaog*/
@@ -1514,23 +1529,23 @@ class DeliveryDataState extends State<DeliveryData> {
         print(element.PayAmount);
 
         if (element.PayMode == "PAYTM") {
-          print(
-              "Paytm${element.itemId}${element.PayMode}${element.PayAmount}${element.ReferenceNumber}");
+          // print(
+          //     "Paytm${element.itemId}${element.PayMode}${element.PayAmount}${element.ReferenceNumber}");
           list_data.add(PaymentJSON(
               int.parse(element.itemId),
               element.PayMode.toString(),
               int.parse(element.PayAmount),
               int.parse(element.deliveryBoyID),
-              element.ReferenceNumber));
+              element.RefrenceNumber));
         } else if (element.PayMode == "COD") {
           list_data.add(PaymentJSON(
               int.parse(element.itemId),
               element.PayMode.toString(),
               int.parse(element.PayAmount),
               int.parse(element.deliveryBoyID),
-              element.ReferenceNumber));
+              element.RefrenceNumber));
           print(
-              "Paytm${element.itemId}${element.PayMode}${element.PayAmount}${element.ReferenceNumber}");
+              "Paytm${element.itemId}${element.PayMode}${element.PayAmount}${element.RefrenceNumber}");
         }
         // else {
         //   list_data.add(PaymentJSON(int.parse(element.itemId), paymentelement,
@@ -1576,14 +1591,14 @@ class DeliveryDataState extends State<DeliveryData> {
         // });
       }
     } else {
-      Fluttertoast.showToast(
-          msg: "No Payemnt Data",
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.BOTTOM,
-          timeInSecForIosWeb: 1,
-          backgroundColor: Colors.black,
-          textColor: Colors.white,
-          fontSize: 16.0);
+      // Fluttertoast.showToast(
+      //     msg: "No Payment Data",
+      //     toastLength: Toast.LENGTH_SHORT,
+      //     gravity: ToastGravity.BOTTOM,
+      //     timeInSecForIosWeb: 1,
+      //     backgroundColor: Colors.black,
+      //     textColor: Colors.white,
+      //     fontSize: 16.0);
     }
   }
 

@@ -1,6 +1,7 @@
 import 'package:crm_flutter/Code.dart';
 import 'package:crm_flutter/ui/ConnectionProblem.dart';
 import 'package:crm_flutter/ui/DeliveryData.dart';
+import 'package:crm_flutter/ui/SplashScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -25,7 +26,7 @@ class MyApp extends StatelessWidget{
           primarySwatch: Colors.blue,
         ),
         debugShowCheckedModeBanner: false,
-        home: DeliveryData()
+        home: SplashScreen()
     );
   }
 

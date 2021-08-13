@@ -13,7 +13,7 @@ class PaymentDatabaseHelper{
   static final table_payment = 'paymentdetails';
   static final itemId = 'itemId';
   static final PayMode = 'PayMode';
-  static final ReferenceNumber = 'ReferenceNumber';
+  static final ReferenceNumber = 'RefrenceNumber';
   static final columnpayment_details = 'payment_details';
   static final PayAmount = 'PayAmount';
   static final deliveryBoyID = 'deliveryBoyID';
@@ -58,7 +58,7 @@ class PaymentDatabaseHelper{
   /*add to payment data*/
   Future<int> insert_payment(Paymentdetails payment) async {
     Database? db = await instance.database;
-    return await db!.insert(table_payment, {'itemId': payment.itemId,'PayMode':payment.PayMode, 'PayAmount': payment.PayAmount,'ReferenceNumber': payment.ReferenceNumber,'deliveryBoyID':payment.deliveryBoyID});
+    return await db!.insert(table_payment, {'itemId': payment.itemId,'PayMode':payment.PayMode, 'PayAmount': payment.PayAmount,'ReferenceNumber': payment.RefrenceNumber,'deliveryBoyID':payment.deliveryBoyID});
   }
 
   /*add to delivery data*/

@@ -13,7 +13,7 @@ class PaymentJSON{
     'itemId' : item_id,
     'PayMode' : paymode,
     'PayAmount' : payamount,
-    'ReferenceNumber' : referenceId,
+    'RefrenceNumber' : referenceId,
     'deliveryBoyID' : deliveryboy
   };
 

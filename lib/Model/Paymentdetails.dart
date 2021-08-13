@@ -5,14 +5,14 @@ class Paymentdetails{
   String PayMode="";
   String PayAmount ="" ;
   String deliveryBoyID="";
-  String ReferenceNumber="0";
+  String RefrenceNumber="";
 
   Map<String, Object?> toMap() {
     var map = <String, Object?>{
       'itemId': itemId,
       'PayMode': PayMode,
       'PayAmount': PayAmount,
-      'RefrenceNumber': ReferenceNumber,
+      'RefrenceNumber': RefrenceNumber,
       'deliveryBoyID' : deliveryBoyID
     };
 
@@ -20,7 +20,7 @@ class Paymentdetails{
       map['itemId'] = itemId;
       map['PayMode'] = PayMode;
       map['PayAmount'] = PayAmount;
-      map['RefrenceNumber'] = ReferenceNumber;
+      map['RefrenceNumber'] = RefrenceNumber;
       map['deliveryBoyID'] = deliveryBoyID;
     }
     return map;
@@ -32,7 +32,7 @@ class Paymentdetails{
     itemId = map['itemId'];
     PayMode = map['PayMode'];
     PayAmount = map['PayAmount'];
-    ReferenceNumber = map['ReferenceNumber'];
+    RefrenceNumber = map['RefrenceNumber'];
     deliveryBoyID = map['deliveryBoyID'];
   }
 
