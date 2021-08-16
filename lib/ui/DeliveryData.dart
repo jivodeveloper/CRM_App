@@ -72,7 +72,7 @@ class DeliveryDataState extends State<DeliveryData> {
   TextEditingController reference_id = new TextEditingController();
   TextEditingController bal_amtc = new TextEditingController();
   List _selecteCategorysID = [];
-
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   bool valuefirst = false;
   bool valuesecond = false;
   List<Items> json_data = [];
@@ -107,16 +107,17 @@ class DeliveryDataState extends State<DeliveryData> {
         _connectivity.onConnectivityChanged.listen(_updateConnectionStatus);
     initConnectivity();
     // updatepaymentdata();
-    getuserdata();
+    getuserdata(context);
     _queryAll();
     _queryPaymentAll();
   }
 
-  @override
-  void dispose() {
-    _connectivitySubscription.cancel();
-    super.dispose();
-  }
+  //
+  // @override
+  // void dispose() {
+  //  // _connectivitySubscription.cancel();
+  //   super.dispose();
+  // }
 
   /*init*/
   Future<void> initConnectivity() async {
@@ -152,21 +153,21 @@ class DeliveryDataState extends State<DeliveryData> {
   checkuserconnection() {}
 
   /* to receive empid*/
-  getuserdata() async {
+  getuserdata(BuildContext context) async {
     progressDialog.dismiss();
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      // empid = prefs.getString('empid')!;
-      empid = "10040";
+      empid = prefs.getString('empid')!;
+      // empid = "10040";
       // print("empid$empid");
     });
 
     progressDialog.show();
-    getdeliverydata(empid);
+    getdeliverydata(empid,context);
   }
 
   /*check interet for delivery data*/
-  checkinternetconnection(String status) async {
+  checkinternetconnection(String status,BuildContext context) async {
     try {
       final result = await InternetAddress.lookup('www.google.com');
       if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
@@ -175,7 +176,7 @@ class DeliveryDataState extends State<DeliveryData> {
         } else {
           updatepaymentdata(status);
         }
-        progressDialog.dismiss();
+
       }
     } on SocketException catch (_) {
       int result = 0;
@@ -217,9 +218,6 @@ class DeliveryDataState extends State<DeliveryData> {
         });
       });
 
-      // json_data.forEach((element) {
-      //   _insert(element.item_id, status);
-      // });
       progressDialog.dismiss();
     }
   }
@@ -238,11 +236,14 @@ class DeliveryDataState extends State<DeliveryData> {
   //   }
   //   Navigator.pop(context);
   // }
+
   int selected = 0;
+
   @override
   Widget build(BuildContext context) {
     var isSelected = false;
     return Scaffold(
+        key: _scaffoldKey,
         appBar: AppBar(
           backgroundColor: Color(0xff18325e),
           title: Text("Delivery Details"),
@@ -258,7 +259,7 @@ class DeliveryDataState extends State<DeliveryData> {
                             _displayTextInputDialog(context, "Delivered")),
                     IconButton(
                         icon: new Icon(Icons.close),
-                        onPressed: () => checkinternetconnection('Cancel')),
+                        onPressed: () => checkinternetconnection('Cancel',context)),
                   ],
                 ))
           ],
@@ -419,11 +420,7 @@ class DeliveryDataState extends State<DeliveryData> {
                                                             mobile = order_list[
                                                                     indexx]
                                                                 .custMobile;
-                                                            // amount = order_list[
-                                                            //         indexx]
-                                                            //     .itemDetails[
-                                                            //         index]
-                                                            //     .itemTotalAmount;
+
                                                             amount =
                                                                 amnt_total
                                                                     .fold(
@@ -617,10 +614,6 @@ class DeliveryDataState extends State<DeliveryData> {
       }
     );
     return new BoxDecoration();
-
-    // json_data.forEach((element) {
-    //   print("${element.item_id}");
-    // });
   }
 
   Future<bool> _onBackPressed() async {
@@ -733,271 +726,7 @@ class DeliveryDataState extends State<DeliveryData> {
                                   'It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters, as opposed to using "Content here, content here", making it look like readable English.',
                             ))
                       ],
-                      //           title: Text( order_list[indexx].custName+"\n"+ order_list[indexx].custMobile, style: GoogleFonts.lato(
-                      // textStyle: TextStyle(
-                      // fontWeight:
-                      // FontWeight.bold),)),
-                      //           subtitle: Text(order_list[indexx].address,  style: GoogleFonts.lato(
-                      //           textStyle: TextStyle(
-                      // fontWeight:
-                      // FontWeight.bold),)),
-                      //           children: <Widget>[
-                      //             // Padding(padding: EdgeInsets.all(25.0),
-                      //             //     child :  Column(
-                      //             //       crossAxisAlignment: CrossAxisAlignment.center,
-                      //             //       children: <Widget>[
-                      //             //         Align(
-                      //             //           alignment: Alignment.center,
-                      //             //           child: Row(
-                      //             //             children: [
-                      //             //               Expanded(
-                      //             //                   child: Text(
-                      //             //                     "Id",
-                      //             //                     style: TextStyle(
-                      //             //                         color: Colors.black,
-                      //             //                         fontWeight: FontWeight.bold),
-                      //             //                     textAlign: TextAlign.center,
-                      //             //                   )),
-                      //             //               Expanded(
-                      //             //                   child: Text(
-                      //             //                     "Items",
-                      //             //                     style: TextStyle(
-                      //             //                         color: Colors.black,
-                      //             //                         fontWeight: FontWeight.bold),
-                      //             //                     textAlign: TextAlign.center,
-                      //             //                   )),
-                      //             //               Expanded(
-                      //             //                   child: Text(
-                      //             //                     "Rate",
-                      //             //                     style: TextStyle(
-                      //             //                         color: Colors.black,
-                      //             //                         fontWeight: FontWeight.bold),
-                      //             //                     textAlign: TextAlign.center,
-                      //             //                   )),
-                      //             //               Expanded(
-                      //             //                   child: Text(
-                      //             //                     "Quantity",
-                      //             //                     style: TextStyle(
-                      //             //                         color: Colors.black,
-                      //             //                         fontWeight: FontWeight.bold),
-                      //             //                     textAlign: TextAlign.center,
-                      //             //                   )),
-                      //             //               Expanded(
-                      //             //                   child: Text(
-                      //             //                     "Total",
-                      //             //                     style: TextStyle(
-                      //             //                         color: Colors.black,
-                      //             //                         fontWeight: FontWeight.bold),
-                      //             //                     textAlign: TextAlign.center,
-                      //             //                   )),
-                      //             //               Expanded(
-                      //             //                   child: Text(
-                      //             //                     "Status",
-                      //             //                     style: TextStyle(
-                      //             //                         color: Colors.black,
-                      //             //                         fontWeight: FontWeight.bold),
-                      //             //                     textAlign: TextAlign.center,
-                      //             //                   )),
-                      //             //             ],
-                      //             //           ),
-                      //             //         ),
-                      //             //         Divider(
-                      //             //           height: 5,
-                      //             //           thickness: 5,
-                      //             //           indent: 20,
-                      //             //           endIndent: 20,
-                      //             //         ),
-                      //             //         Container(
-                      //             //             padding: EdgeInsets.all(10),
-                      //             //             height: 200,
-                      //             //             width: MediaQuery.of(context).size.width,
-                      //             //             child: ListView.builder(
-                      //             //                 itemCount: order_list[indexx]
-                      //             //                     .itemDetails
-                      //             //                     .length,
-                      //             //                 itemBuilder: (context, index) {
-                      //             //                   return GestureDetector(
-                      //             //                       onLongPress: () {},
-                      //             //                       child: MultiSelectItem(
-                      //             //                           isSelecting:
-                      //             //                           controller.isSelecting,
-                      //             //                           onSelected: () {
-                      //             //                             setState(() {
-                      //             //                               //  expansionTile.currentState!.collapse();
-                      //             //                               order_list[indexx]
-                      //             //                                   .itemDetails[index]
-                      //             //                                   .IsSelect = true;
-                      //             //                               controller.toggle(index);
-                      //             //                               select_all = true;
-                      //             //                               controller
-                      //             //                                   .isSelected(index)
-                      //             //                                   ? addlist(
-                      //             //                                   indexx, index)
-                      //             //                                   : removedata(
-                      //             //                                   indexx,
-                      //             //                                   index,
-                      //             //                                   order_list[indexx]
-                      //             //                                       .itemDetails[
-                      //             //                                   index]
-                      //             //                                       .itemId);
-                      //             //                               name = order_list[indexx]
-                      //             //                                   .custName;
-                      //             //                               mobile =
-                      //             //                                   order_list[indexx]
-                      //             //                                       .custMobile;
-                      //             //                               amount = order_list[
-                      //             //                               indexx]
-                      //             //                                   .itemDetails[index]
-                      //             //                                   .itemTotalAmount;
-                      //             //                               // amount =
-                      //             //                               //     amnt_total
-                      //             //                               //         .fold(
-                      //             //                               //         0, (p,
-                      //             //                               //         c) =>
-                      //             //                               //     p + c);
-                      //             //                               json_payment.add(
-                      //             //                                   order_list[indexx]
-                      //             //                                       .itemDetails[
-                      //             //                                   index]
-                      //             //                                       .itemId);
-                      //             //                             });
-                      //             //                           },
-                      //             //                           child: Container(
-                      //             //                             child: Padding(
-                      //             //                                 padding:
-                      //             //                                 EdgeInsets.only(
-                      //             //                                     bottom: 10),
-                      //             //                                 child: Row(
-                      //             //                                   children: [
-                      //             //                                     if (order_list[
-                      //             //                                     indexx]
-                      //             //                                         .itemDetails[
-                      //             //                                     index]
-                      //             //                                         .active ==
-                      //             //                                         "Pending")
-                      //             //                                     //  progressDialog.dismiss(),
-                      //             //                                       Expanded(
-                      //             //                                           child: Text(
-                      //             //                                             order_list[
-                      //             //                                             indexx]
-                      //             //                                                 .itemDetails[
-                      //             //                                             index]
-                      //             //                                                 .itemId
-                      //             //                                                 .toString(),
-                      //             //                                             textAlign:
-                      //             //                                             TextAlign
-                      //             //                                                 .center,
-                      //             //                                           )),
-                      //             //                                     if (order_list[
-                      //             //                                     indexx]
-                      //             //                                         .itemDetails[
-                      //             //                                     index]
-                      //             //                                         .active ==
-                      //             //                                         "Pending")
-                      //             //                                       Expanded(
-                      //             //                                           child: Text(
-                      //             //                                             order_list[
-                      //             //                                             indexx]
-                      //             //                                                 .itemDetails[
-                      //             //                                             index]
-                      //             //                                                 .itemName,
-                      //             //                                             textAlign:
-                      //             //                                             TextAlign
-                      //             //                                                 .center,
-                      //             //                                           )),
-                      //             //                                     if (order_list[
-                      //             //                                     indexx]
-                      //             //                                         .itemDetails[
-                      //             //                                     index]
-                      //             //                                         .active ==
-                      //             //                                         "Pending")
-                      //             //                                       Expanded(
-                      //             //                                           child: Text(
-                      //             //                                             order_list[
-                      //             //                                             indexx]
-                      //             //                                                 .itemDetails[
-                      //             //                                             index]
-                      //             //                                                 .itemRate
-                      //             //                                                 .toString(),
-                      //             //                                             textAlign:
-                      //             //                                             TextAlign
-                      //             //                                                 .center,
-                      //             //                                           )),
-                      //             //                                     if (order_list[
-                      //             //                                     indexx]
-                      //             //                                         .itemDetails[
-                      //             //                                     index]
-                      //             //                                         .active ==
-                      //             //                                         "Pending")
-                      //             //                                       Expanded(
-                      //             //                                           child: Text(
-                      //             //                                             order_list[
-                      //             //                                             indexx]
-                      //             //                                                 .itemDetails[
-                      //             //                                             index]
-                      //             //                                                 .itemQty
-                      //             //                                                 .toString(),
-                      //             //                                             textAlign:
-                      //             //                                             TextAlign
-                      //             //                                                 .center,
-                      //             //                                           )),
-                      //             //                                     if (order_list[
-                      //             //                                     indexx]
-                      //             //                                         .itemDetails[
-                      //             //                                     index]
-                      //             //                                         .active ==
-                      //             //                                         "Pending")
-                      //             //                                       Expanded(
-                      //             //                                           child: Text(
-                      //             //                                             order_list[
-                      //             //                                             indexx]
-                      //             //                                                 .itemDetails[
-                      //             //                                             index]
-                      //             //                                                 .itemTotalAmount
-                      //             //                                                 .toString(),
-                      //             //                                             textAlign:
-                      //             //                                             TextAlign
-                      //             //                                                 .center,
-                      //             //                                           )),
-                      //             //                                     if (order_list[
-                      //             //                                     indexx]
-                      //             //                                         .itemDetails[
-                      //             //                                     index]
-                      //             //                                         .active ==
-                      //             //                                         "Pending")
-                      //             //                                       Expanded(
-                      //             //                                           child: Text(
-                      //             //                                             order_list[
-                      //             //                                             indexx]
-                      //             //                                                 .itemDetails[
-                      //             //                                             index]
-                      //             //                                                 .active
-                      //             //                                                 .toString(),
-                      //             //                                             textAlign:
-                      //             //                                             TextAlign
-                      //             //                                                 .center,
-                      //             //                                           )),
-                      //             //                                   ],
-                      //             //                                 )),
-                      //             //                             decoration: order_list[
-                      //             //                             indexx]
-                      //             //                                 .itemDetails[
-                      //             //                             index]
-                      //             //                                 .IsSelect ==
-                      //             //                                 true &&
-                      //             //                                 controller
-                      //             //                                     .isSelected(
-                      //             //                                     index)
-                      //             //                                 ? new BoxDecoration(
-                      //             //                                 color: Colors
-                      //             //                                     .grey[500])
-                      //             //                                 : new BoxDecoration(),
-                      //             //                           )));
-                      //             //                 })),
-                      //             //       ],
-                      //             //     ),
-                      //             // )
-                      //           ],
+
                       onExpansionChanged: ((newState) {
                         if (newState)
                           setState(() {
@@ -1018,14 +747,6 @@ class DeliveryDataState extends State<DeliveryData> {
   }
 
   addlist(int i, int index) {
-    // order_list[i].itemDetails[index].IsSelect = true;
-
-    // //print(order_list[i].itemDetails[index].itemId);
-    // if(order_list.indexWhere((element) => element.itemDetails[index] == index)){
-    //   order_list[i].itemDetails[index].IsSelect = true;
-    // }else{
-    //   order_list[i].itemDetails[index].IsSelect = false;
-    // }
 
     // json_data.clear();
     json_data.add(Items(order_list[i].itemDetails[index].itemId));
@@ -1054,7 +775,7 @@ class DeliveryDataState extends State<DeliveryData> {
   }
 
   /*get delivery details online*/
-  Future getdeliverydata(String empid) async {
+  Future getdeliverydata(String empid,context) async {
 
     Map<String, String> headers = {
       'Content-Type': 'application/json',
@@ -1069,41 +790,49 @@ class DeliveryDataState extends State<DeliveryData> {
 
     for (int i = 0; i < order_data.orderList.length; i++) {
       for (int j = 0;j < order_data.orderList[i].itemDetails.length;j++) {
-        if (order_data.orderList[i].itemDetails[j].active == "Pending"){
-          // var item_data = ItemDetails.fromJson(json.decode(order_data.orderList[j].itemDetails));
-          setState(() {
-           // if(!order_list.contains( order_data.orderList[i].custMobile))
-              order_list.add(OrderList(id: order_data.orderList[i].id, custMobile: order_data.orderList[i].custMobile, custName: order_data.orderList[i].custName, zoneId: order_data.orderList[i].zoneId, zoneName: order_data.orderList[i].zoneName, areaId: order_data.orderList[i].areaId, areaName: order_data.orderList[i].areaName, stateId: order_data.orderList[i].stateId, stateName: order_data.orderList[i].stateName, landmark: order_data.orderList[i].landmark, address: order_data.orderList[i].address, pincode: order_data.orderList[i].pincode, totalPrice: order_data.orderList[i].totalPrice, totalQty: order_data.orderList[i].totalQty, paymentMode: order_data.orderList[i].paymentMode, paymentRemark: order_data.orderList[i].paymentRemark, paymentNumber: order_data.orderList[i].paymentNumber, remark: order_data.orderList[i].remark, callerId: order_data.orderList[i].callerId, deliveryAssignId: order_data.orderList[i].deliveryAssignId, deliveryAssignName: order_data.orderList[i].deliveryAssignName, deliveryAssignDate: order_data.orderList[i].deliveryAssignDate, callerName: order_data.orderList[i].callerName, source: order_data.orderList[i].source, insertedDate: order_data.orderList[i].insertedDate, itemCoupon: order_data.orderList[i].itemCoupon, itemDetails: order_data.orderList[i].itemDetails));
-              // print("${order_list.contains(order_data.orderList[i].custMobile)}");
-              // print("${order_list.contains(order_data.orderList[i].custMobile)}");
-           // item_list.add(ItemDetails(id: order_data.orderList[i].itemDetails[j].id, itemId: order_data.orderList[i].itemDetails[j].itemId, itemName:order_data.orderList[i].itemDetails[j].itemName, itemQty: order_data.orderList[i].itemDetails[j].itemQty, uomValue:order_data.orderList[i].itemDetails[j].uomValue, itemRate: order_data.orderList[i].itemDetails[j].itemRate, itemTotalAmount: order_data.orderList[i].itemDetails[j].itemTotalAmount, coupon: order_data.orderList[i].itemDetails[j].coupon, deliveryRemark: order_data.orderList[i].itemDetails[j].deliveryRemark, uom: order_data.orderList[i].itemDetails[j].uom, rawItemName: order_data.orderList[i].itemDetails[j].rawItemName, inQty:order_data.orderList[i].itemDetails[j].inQty, outQty:order_data.orderList[i].itemDetails[j].outQty, active: order_data.orderList[i].itemDetails[j].active, payCharge: order_data.orderList[i].itemDetails[j].payCharge, reciableAmt:order_data.orderList[i].itemDetails[j].reciableAmt, IsSelect:order_data.orderList[i].itemDetails[j].IsSelect));
-           }
-          );
+       if (order_data.orderList[i].itemDetails[j].active == "Pending"){
+          var contain = order_list.where((element) => element.custName == order_data.orderList[i].custName);
+          if(contain.isEmpty){
+            if(mounted){
+              setState(() {
+                order_list.add(OrderList(id: order_data.orderList[i].id,
+                    custMobile: order_data.orderList[i].custMobile,
+                    custName: order_data.orderList[i].custName,
+                    zoneId: order_data.orderList[i].zoneId,
+                    zoneName: order_data.orderList[i].zoneName,
+                    areaId: order_data.orderList[i].areaId,
+                    areaName: order_data.orderList[i].areaName,
+                    stateId: order_data.orderList[i].stateId,
+                    stateName: order_data.orderList[i].stateName,
+                    landmark: order_data.orderList[i].landmark,
+                    address: order_data.orderList[i].address,
+                    pincode: order_data.orderList[i].pincode,
+                    totalPrice: order_data.orderList[i].totalPrice,
+                    totalQty: order_data.orderList[i].totalQty,
+                    paymentMode: order_data.orderList[i].paymentMode,
+                    paymentRemark: order_data.orderList[i].paymentRemark,
+                    paymentNumber: order_data.orderList[i].paymentNumber,
+                    remark: order_data.orderList[i].remark,
+                    callerId: order_data.orderList[i].callerId,
+                    deliveryAssignId: order_data.orderList[i].deliveryAssignId,
+                    deliveryAssignName: order_data.orderList[i].deliveryAssignName,
+                    deliveryAssignDate: order_data.orderList[i].deliveryAssignDate,
+                    callerName: order_data.orderList[i].callerName,
+                    source: order_data.orderList[i].source,
+                    insertedDate: order_data.orderList[i].insertedDate,
+                    itemCoupon: order_data.orderList[i].itemCoupon,
+                    itemDetails: order_data.orderList[i].itemDetails));
+              });
+            }
 
-        }else{
+          }else{
 
-        }
+          }
+          }
+
       }
     }
 
-    // final jsonList = order_list.map((item) => jsonEncode(item)).toList();
-    // final uniqueJsonList = jsonList.toSet().toList();
-    //
-    // // final Set<OrderList> set = order_list.toSet();
-    // //
-    // // order_list.addAll(order_list.toSet().toList());
-    // final result = uniqueJsonList.map((item) => jsonDecode(item)).toList();
-
-    // result.forEach((element) {
-    //   order_list.add(element);
-    // });
-    // set.forEach((element) {
-    //
-    //   print("${element.custName}");
-    //
-    //    }
-    // );
-    progressDialog.dismiss();
     if (order_list.length == 0) {
       Fluttertoast.showToast(
           msg: "Sorry No Data",
@@ -1113,27 +842,32 @@ class DeliveryDataState extends State<DeliveryData> {
           backgroundColor: Colors.black,
           textColor: Colors.white,
           fontSize: 16.0);
-      Navigator.pushReplacement(context,
-          MaterialPageRoute(builder: (BuildContext context) => Dashboard()));
+      // Navigator.pushReplacement(
+      //     context, MaterialPageRoute(builder: (context) =>Dashboard()));
+      progressDialog.dismiss();
+
     }
 
-    //
-    // for (int i = 0; i < order_list.length; i++) {
-    //   for (int j = 0; j < order_list[i].itemDetails.length; j++) {
-    //     if ( order_list[i].itemDetails[j].active == "Pending") {
-    //     print("$i $j");
-    //     print( order_list[i].custName +
-    //         "" +
-    //         order_list[i].itemDetails[j].itemName +
-    //         "" +
-    //         order_list[i].itemDetails[j].active);
-    //      }
-    //   }
-    // }
+
+    for (int i = 0; i < order_list.length; i++) {
+      for (int j = 0; j < order_list[i].itemDetails.length; j++) {
+        // if ( order_list[i].itemDetails[j].active == "Pending") {
+        print("$i $j");
+        print( order_list[i].custName +
+            "" +
+            order_list[i].itemDetails[j].itemName +
+            "" +
+            order_list[i].itemDetails[j].active);
+         }
+      // }
+    }
+    progressDialog.dismiss();
+
   }
 
   /*insert update online*/
   Future updatestatus(String status) async {
+
     var response = await http.post(
       Uri.parse(
           'http://164.52.200.38:90/DeliveryPanel/PostDelivery?ActionName=$status'),
@@ -1153,16 +887,12 @@ class DeliveryDataState extends State<DeliveryData> {
           backgroundColor: Colors.black,
           textColor: Colors.white,
           fontSize: 16.0);
-      //
-      // if(status=='Cancel'){
-      //     Navigator.pop(context);
-      //     Navigator.pushReplacement(context,
-      //         MaterialPageRoute(builder: (BuildContext context) => super.widget));
-      //   }
+      progressDialog.dismiss();
       WidgetsBinding.instance!.addPostFrameCallback((_) {
         Navigator.pushReplacement(context,
             MaterialPageRoute(builder: (BuildContext context) => super.widget));
       });
+
     } else {
       Fluttertoast.showToast(
           msg: "Delivery ${response_data['message']}",
@@ -1173,27 +903,15 @@ class DeliveryDataState extends State<DeliveryData> {
           textColor: Colors.white,
           fontSize: 16.0);
 
-      // SchedulerBinding.instance!.addPostFrameCallback((_) {
-      //   Navigator.pop(context);
-      //   Navigator.pushReplacement(context,
-      //       MaterialPageRoute(builder: (BuildContext context) => super.widget));
-      // });
-
+      progressDialog.dismiss();
     }
 
     setState(() {
       select_all = false;
     });
-    // updatepaymentdata();
+
     json_data.clear();
-    // WidgetsBinding.instance!.addPostFrameCallback((_) {
-    //
-    //   Navigator.pushReplacement(context,
-    //       MaterialPageRoute(builder: (BuildContext context) => super.widget));
-    // });
-    // Navigator.pop(context);
-    // Navigator.pushReplacement(context,
-    //     MaterialPageRoute(builder: (BuildContext context) => super.widget));
+
   }
 
   /*insert payment details*/
@@ -1231,8 +949,6 @@ class DeliveryDataState extends State<DeliveryData> {
      }
     );
 
-    //json_payment.add(PaymentDatas("COD",1234,itemid));
-    //json_payment.add(36199);
     var response = await http.post(
       Uri.parse('http://164.52.200.38:90/DeliveryPanel/Payment'),
       body: jsonEncode(list_data),
@@ -1253,12 +969,13 @@ class DeliveryDataState extends State<DeliveryData> {
           fontSize: 16.0);
 
       updatestatus(status);
-      WidgetsBinding.instance!.addPostFrameCallback((_) {
-        Navigator.pop(context);
-        Navigator.pushReplacement(context,
-            MaterialPageRoute(builder: (BuildContext context) => super.widget));
-      });
+      progressDialog.dismiss();
+      // WidgetsBinding.instance!.addPostFrameCallback((_) {
+      //   Navigator.of(context).pop();
+      //   Navigator.pushReplacement(context,MaterialPageRoute(builder: (BuildContext context) => Dashboard()));
+      // });
       json_data.clear();
+
     } else {
       Fluttertoast.showToast(
           msg: "${response_data['message']}",
@@ -1269,18 +986,13 @@ class DeliveryDataState extends State<DeliveryData> {
           textColor: Colors.white,
           fontSize: 16.0);
 
-      WidgetsBinding.instance!.addPostFrameCallback((_) {
-        Navigator.pop(context);
-        Navigator.pushReplacement(context,
-            MaterialPageRoute(builder: (BuildContext context) => super.widget));
-      });
+      progressDialog.dismiss();
    }
-    progressDialog.dismiss();
+
   }
 
   /* show custom payment dilaog*/
-  Future<void> _displayTextInputDialog(
-      BuildContext context, String status) async {
+  Future<void> _displayTextInputDialog(BuildContext context, String status) async {
     return showDialog(
         context: context,
         builder: (context) {
@@ -1343,13 +1055,19 @@ class DeliveryDataState extends State<DeliveryData> {
                                       bal_amt = true;
                                       ref_amt = true;
                                     } else if (values['PAYTM'] == true) {
+                                      payment_details.remove('COD');
                                       ref_amt = true;
                                       bal_amt = false;
                                     } else if (values['COD'] == true) {
+                                      payment_details.remove('PAYTM');
                                       bal_amt = false;
                                       ref_amt = false;
                                     } else if (values['PAYTM'] == false &&
                                         values['COD'] == false) {
+                                      bal_amtc.text ="";
+                                      reference_id.text = "";
+                                      payment_details.remove('PAYTM');
+                                      payment_details.remove('COD');
                                       bal_amt = false;
                                       ref_amt = false;
                                     }
@@ -1430,7 +1148,7 @@ class DeliveryDataState extends State<DeliveryData> {
                       if (_formKey.currentState!.validate()) {
                         progressDialog.show();
                         setState(() {
-                          checkinternetconnection(status);
+                          checkinternetconnection(status,context);
 
                           //\  insertpayment(name,mobile,amount,reference_id.text,payment_details);
                         });
@@ -1470,8 +1188,7 @@ class DeliveryDataState extends State<DeliveryData> {
   }
 
   /* insert payment details offline*/
-  void insertpayment(
-    itemid, mode, amount, reference_id, delivery_boy, status) async {
+  void insertpayment(itemid, mode, amount, reference_id, delivery_boy, status) async {
     print("$itemid$mode$amount$reference_id$delivery_boy$status");
     Map<String, dynamic> row = {
       PaymentDatabaseHelper.itemId: itemid.toString(),
@@ -1495,7 +1212,7 @@ class DeliveryDataState extends State<DeliveryData> {
     _insert(itemid, status);
   }
 
-/*get delivery details*/
+  /*get delivery details*/
   void _queryAll() async {
     // json_data.forEach((element) {
     //   print(element);
@@ -1516,7 +1233,7 @@ class DeliveryDataState extends State<DeliveryData> {
     // updatestatus(status);
   }
 
-/*get payemnt details*/
+  /*get payemnt details*/
   void _queryPaymentAll() async {
     final rowcount = await paymenthepler.queryRowCountPayment();
     if (rowcount > 0) {
@@ -1563,6 +1280,7 @@ class DeliveryDataState extends State<DeliveryData> {
       );
 
       Map<String, dynamic> response_data = json.decode(response.body);
+
       if (response_data['message'] == "Record Save Successfully..") {
         Fluttertoast.showToast(
             msg: "Payment Record Save Successfully..",
@@ -1581,6 +1299,7 @@ class DeliveryDataState extends State<DeliveryData> {
             backgroundColor: Colors.black,
             textColor: Colors.white,
             fontSize: 16.0);
+
         _queryAll();
         // WidgetsBinding.instance!.addPostFrameCallback((_) {
         //   Navigator.pop(context);

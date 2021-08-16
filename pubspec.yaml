@@ -46,6 +46,7 @@ dependencies:
   provider: ^5.0.0
   path: ^1.8.0
   connectivity: ^3.0.6
+  data_connection_checker: ^0.3.4
   google_fonts: ^2.1.0
 
 dev_dependencies:
@@ -68,7 +69,7 @@ flutter:
     - assets/Images/menu.png
     - assets/Images/ic_logo_round.png
     - assets/Images/dot.png
-    - assets/Images/nodata.png
+
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware.
 

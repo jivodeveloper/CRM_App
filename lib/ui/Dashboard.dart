@@ -229,7 +229,6 @@ class DashBoardState extends State<Dashboard> {
                     )
                 ),
                 ListTile(
-
                   title: Text(
                     'Dashboard',
                     style: TextStyle(color: Color(0xff18325e), fontSize: 18),
@@ -239,17 +238,18 @@ class DashBoardState extends State<Dashboard> {
                 titlelist(),
 
                 ListTile(
-
                   title: Text(
                     'Delivery Details',
                     style: TextStyle(color: Color(0xff18325e), fontSize: 18),
                   ),
                   onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => DeliveryData()),
-                    );
+                    Navigator.pop(context);
+                    Navigator.of(context).push(_createRoute());
+                    // Navigator.push(
+                    //   context,
+                    //   MaterialPageRoute(
+                    //       builder: (context) => DeliveryData()),
+                    // );
                   },
                 ),
                 ListTile(
@@ -406,5 +406,24 @@ class DashBoardState extends State<Dashboard> {
 
   }
 
+}
+
+
+Route _createRoute() {
+  return PageRouteBuilder(
+    pageBuilder: (context, animation, secondaryAnimation) => DeliveryData(),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      const begin = Offset(0.0, 1.0);
+      const end = Offset.zero;
+      const curve = Curves.ease;
+
+      var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+
+      return SlideTransition(
+        position: animation.drive(tween),
+        child: child,
+      );
+    },
+  );
 }
 

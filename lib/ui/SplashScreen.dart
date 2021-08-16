@@ -67,7 +67,10 @@ class SplashScreenState extends State<SplashScreen> {
   void nextscreen() async{
 
     SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setBool("intenet",true);
     if(prefs.getString('Role')!.isNotEmpty){
+
+
       Timer(
           Duration(seconds: 3),
               () => Navigator.pushReplacement(
@@ -76,8 +79,7 @@ class SplashScreenState extends State<SplashScreen> {
     }else{
       Timer(
           Duration(seconds: 3),
-              () => Navigator.pushReplacement(
-              context, MaterialPageRoute(builder: (context) => LoginScreen())));
+              () => Navigator.of(context).push(_createRoute()));
 
     }
 
